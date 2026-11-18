@@ -129,11 +129,11 @@ function menu(){
   m.push(['agenda','Agenda'],['evidencias','Evidencias'],['visitas','Visitas'],['personal','Personal']);
  } else m.push(['tareas','Mis actividades'],['visitas','Mis visitas']);
  if(r==='admin') m.push(['monitores','Monitores']);
- if(jefe()) m.push(['reportes','Reportes e IA']);
+ if(jefe()) m.push(['reportes','Reportes']);
  m.push(['perfil','Mi perfil']);
  return m;
 }
-const TITULOS={inicio:'Inicio',agenda:'Agenda semanal',tareas:'Mis actividades',evidencias:'Evidencias',visitas:'Visitas',personal:'Personal',monitores:'Monitores',reportes:'Reportes e IA',perfil:'Mi perfil'};
+const TITULOS={inicio:'Inicio',agenda:'Agenda semanal',tareas:'Mis actividades',evidencias:'Evidencias',visitas:'Visitas',personal:'Personal',monitores:'Monitores',reportes:'Reportes de avance',perfil:'Mi perfil'};
 function ir(v){S.vista=v;S.f={};pintar();window.scrollTo(0,0)}
 function pintar(){
  const pend={personal:S.personal.filter(p=>p.estatus==='Pendiente').length,evidencias:S.evs.filter(e=>e.validacion==='Por validar').length,

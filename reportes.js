@@ -1,15 +1,49 @@
-/* SAET Bienestar · Descargas en Excel y resumen con IA
+/* SAET Bienestar · Pantalla de Reportes (filtros) y descargas en Excel; el documento del reporte está en avance.js
    Lo usa: Administrador, Regional y Encargado */
 
-function vReportes(){
- $('#vista').innerHTML=`<div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(300px,1fr))">
- <div class="card"><h3>${ic('reportes')}Descargar en Excel</h3><p class="mute sm" style="margin-bottom:14px">Las descargas incluyen todo el historial de tu alcance${S.user.rol==='admin'?' (todo el estado)':''}.</p>
-  ${[['Personal','Directorio del personal con CURP, contacto y redes'],['Actividades','Agenda completa con estatus'],['Evidencias','Evidencias con enlaces a fotos y ubicación'],['Visitas','Personas visitadas y resultados'],['Todo','Un solo libro con las cuatro hojas']].map(([t,d])=>`<div class="item"><div class="sp"><div class="t">${t}</div><div class="s">${d}</div></div><button class="btn ${t==='Todo'?'':'sec'} ch" onclick="excel('${t}',this)">Descargar</button></div>`).join('')}</div>
- <div class="card"><h3>${ic('ia')}Resumen ejecutivo con IA</h3><p class="mute sm" style="margin-bottom:12px">Genera un parte de la semana listo para enviar a tu superior.</p>${navSemana()}
-  <button class="btn oro" style="margin:14px 0" onclick="resumenIA(this)">${ic('ia')}Generar resumen</button>
-  <div id="resIA" class="ia hide" style="white-space:pre-wrap"></div><button id="resCop" class="btn sec ch hide" style="margin-top:10px" onclick="navigator.clipboard.writeText($('#resIA').textContent).then(()=>toast('Copiado'))">Copiar texto</button></div></div>`;
+/* Estado del reporte: periodo, alcance, paquete y último resultado */
+function rangoPeriodo(R){
+ const h=new Date(),l=lunes(h),m0=new Date(h.getFullYear(),h.getMonth(),1);
+ const P={semana:[l,mas(l,6)],semanaPasada:[mas(l,-7),mas(l,-1)],mes:[m0,new Date(h.getFullYear(),h.getMonth()+1,0)],mesPasado:[new Date(h.getFullYear(),h.getMonth()-1,1),new Date(h.getFullYear(),h.getMonth(),0)]};
+ if(P[R.per]){R.desde=iso(P[R.per][0]);R.hasta=iso(P[R.per][1])}
 }
-function resumenIA(b){ocupado(b,async()=>{const r=await api('ia',{tipo:'resumen',desde:iso(S.semana),hasta:iso(mas(S.semana,6))});$('#resIA').textContent=r.texto;$('#resIA').classList.remove('hide');$('#resCop').classList.remove('hide')})}
+const PERIODOS=[['semana','Esta semana'],['semanaPasada','Semana pasada'],['mes','Este mes'],['mesPasado','Mes pasado'],['otro','Personalizado']];
+function vReportes(){
+ const u=S.user,R=S.rep=S.rep||{per:'semana',sel:'',paquete:false,datos:null,ia:''};rangoPeriodo(R);
+ const zonas=S.zonas.filter(z=>u.rol==='admin'||(u.rol==='regional'&&z.region===u.region)),regiones=[...new Set(zonas.map(z=>z.region))];
+ const opt=(v,t)=>`<option value="${esc(v)}" ${R.sel===v?'selected':''}>${esc(t)}</option>`;
+ const alcance=u.rol==='encargado'?`<div class="fijo">${esc(u.zona)}</div>`:`<select id="rSel" onchange="S.rep.sel=this.value;pintarOpciones()">
+  ${u.rol==='admin'?opt('','Todo el estado')+regiones.map(r=>`<optgroup label="${esc(r)}">${opt('r:'+r,'Toda la '+r)}${zonas.filter(z=>z.region===r).map(z=>opt('z:'+z.zona,z.zona)).join('')}</optgroup>`).join('')
+   :opt('','Toda mi región ('+u.region+')')+zonas.map(z=>opt('z:'+z.zona,z.zona)).join('')}</select>`;
+ $('#vista').innerHTML=`<div class="card no-print rep-ctl"><h3>${ic('reportes')} Reporte de avance</h3>
+  <div class="chips" role="group" aria-label="Periodo">${PERIODOS.map(([k,t])=>`<button class="chip2 ${R.per===k?'on':''}" onclick="S.rep.per='${k}';vReportes()">${t}</button>`).join('')}</div>
+  <div class="rep-filtros"><div class="campo"><label>Desde</label><input type="date" id="rDe" value="${R.desde}" ${R.per==='otro'?'':'disabled'} onchange="S.rep.desde=this.value"></div>
+   <div class="campo"><label>Hasta</label><input type="date" id="rA" value="${R.hasta}" ${R.per==='otro'?'':'disabled'} onchange="S.rep.hasta=this.value"></div>
+   <div class="campo" style="flex:2"><label>Alcance</label>${alcance}</div></div>
+  <div id="rOpc"></div>
+  <button class="btn" style="margin-top:6px" onclick="generarReporte(this)">${ic('reportes')} Generar reporte</button></div>
+ <div id="repDoc">${R.datos?barraAcciones()+docReporte(R.datos,R.ia,R.paqueteHecho):`<div class="card vacio no-print">Elige el periodo y el alcance, y pulsa <b>Generar reporte</b>.<br><span class="sm">Verás el avance por región, municipio y servidor, con semáforo, gráficas y hallazgos. Lo puedes guardar en PDF, Excel o mandarlo por WhatsApp.</span></div>`}</div>
+ <details class="card no-print" style="margin-top:18px"><summary class="serif" style="font-size:16px;cursor:pointer">${ic('reportes')} Descargar bases completas en Excel</summary>
+  <p class="mute sm" style="margin:10px 0">Todo el historial de tu alcance${u.rol==='admin'?' (todo el estado)':''}, sin filtros.</p>
+  ${[['Personal','Directorio del personal con CURP, contacto y redes'],['Actividades','Agenda completa con estatus'],['Evidencias','Evidencias con enlaces a fotos y ubicación'],['Visitas','Personas visitadas y resultados'],['Todo','Un solo libro con las cuatro hojas']].map(([t,d])=>`<div class="item"><div class="sp"><div class="t">${t}</div><div class="s">${d}</div></div><button class="btn ${t==='Todo'?'':'sec'} ch" onclick="excel('${t}',this)">Descargar</button></div>`).join('')}</details>`;
+ pintarOpciones();
+}
+function pintarOpciones(){const R=S.rep,u=S.user,el=$('#rOpc');if(!el)return;
+ const tipo=u.rol==='encargado'||R.sel.startsWith('z:')?'zona':(u.rol==='regional'||R.sel.startsWith('r:'))?'region':'estado';
+ el.innerHTML=tipo==='zona'?'':`<label class="check"><input type="checkbox" ${R.paquete?'checked':''} onchange="S.rep.paquete=this.checked"> Agregar una hoja por cada ${tipo==='estado'?'región':'municipio o distrito'} (paquete para imprimir)</label>`}
+function paramsReporte(){const R=S.rep;return{desde:R.desde,hasta:R.hasta,region:R.sel.startsWith('r:')?R.sel.slice(2):'',zona:R.sel.startsWith('z:')?R.sel.slice(2):''}}
+function generarReporte(b){ocupado(b,async()=>{const R=S.rep;
+ if(!R.desde||!R.hasta||R.desde>R.hasta) throw new Error('Revisa las fechas del periodo');
+ R.datos=await api('reporte',paramsReporte(),120000);R.ia='';R.paqueteHecho=R.paquete;
+ $('#repDoc').innerHTML=barraAcciones()+docReporte(R.datos,'',R.paquete);$('#repDoc').scrollIntoView({behavior:'smooth',block:'start'})})}
+function barraAcciones(){return`<div class="acciones no-print"><button class="btn" onclick="imprimirReporte()">${ic('reportes')} Guardar PDF / imprimir</button>
+ <button class="btn sec" onclick="excelReporte(S.rep.datos)">Excel del reporte</button><button class="btn sec" onclick="copiarWhatsApp(S.rep.datos)">Copiar para WhatsApp</button>
+ <button class="btn oro" onclick="analizarReporte(this)">${ic('ia')} ${S.rep.ia?'Rehacer':'Agregar'} análisis con IA</button></div>`}
+function analizarReporte(b){ocupado(b,async()=>{const R=S.rep;R.ia=(await api('analisisReporte',paramsReporte(),120000)).texto;
+ $('#repDoc').innerHTML=barraAcciones()+docReporte(R.datos,R.ia,R.paqueteHecho);toast('Análisis agregado al reporte')})}
+/* Atajo desde Inicio u otras pantallas: abre Reportes con un alcance ya elegido */
+function abrirReporte(sel){S.rep=Object.assign(S.rep||{per:'semana',paquete:false,datos:null,ia:''},{sel:sel||'',datos:null,ia:''});ir('reportes');setTimeout(()=>{const b=document.querySelector('.rep-ctl .btn:last-child');if(b)generarReporte(b)},50)}
+
 /* Generador propio de archivos .xlsx (sin librerías externas) */
 function zipSinComprimir(archivos){
  const enc=new TextEncoder(),T=[];for(let n=0;n<256;n++){let c=n;for(let k=0;k<8;k++)c=c&1?0xEDB88320^(c>>>1):c>>>1;T[n]=c>>>0}

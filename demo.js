@@ -46,8 +46,39 @@ function demoApi(accion,d){
    const z=DB.zonas.find(x=>x.zona===d.zona),np={id:id('P'),rol:d.rol,nombre:d.nombre,curp:(d.curp||'').toUpperCase(),correo:d.correo,telefono:d.telefono,facebook:'',instagram:'',selfie:'',region:d.rol==='regional'?d.region:z?z.region:'',zona:d.rol==='regional'?'':d.zona,estatus:'Activo',registro:hoy()};DB.personal.push(np);return{pin:'482913',usuario:np.curp,persona:np}}
   if(accion==='resetPin') return{pin:'739105',usuario:DB.personal.find(p=>p.id===d.id).curp};
   if(accion==='actualizarPerfil'){const p=DB.personal.find(x=>x.id===u.id);['correo','telefono','facebook','instagram','selfie'].forEach(k=>{if(d[k]!=null)p[k]=d[k]});return{usuario:p}}
+  if(accion==='reporte') return demoReporte(u,d);
+  if(accion==='analisisReporte') return{texto:'Ejemplo de demo. Con tu clave de Gemini, aquí aparece un análisis para el delegado: panorama general, dónde se va bien, dónde hay rezago y tres acciones concretas para la próxima semana, usando solo los números de este reporte.'};
   if(accion==='ia'){if(d.tipo==='agenda') return[{titulo:'Asamblea informativa',tipo:'Asamblea informativa',fecha:iso(mas(lunes(new Date()),1)),hora:'09:00',lugar:'Parque de Tamulté',descripcion:''},{titulo:'Visitas domiciliarias',tipo:'Visita domiciliaria',fecha:iso(mas(lunes(new Date()),2)),hora:'',lugar:'Col. Gaviotas',descripcion:''},{titulo:'Reunión de trabajo',tipo:'Reunión de trabajo',fecha:iso(mas(lunes(new Date()),4)),hora:'10:00',lugar:'Delegación',descripcion:''}];
    if(d.tipo==='verificar') return{ia:'✔ La foto muestra una actividad en campo acorde con la tarea (ejemplo de demo).'};
    return{texto:'Ejemplo de demo: al conectar tu clave de Gemini, aquí aparecerá el resumen ejecutivo de la semana con avance general, zonas destacadas, zonas rezagadas y recomendaciones, redactado a partir de tus datos reales.'}}
   throw new Error('Acción no disponible en demo')})()))}catch(e){no(e)}},220));
+}
+
+function demoReporte(u,d){
+ const alc=r=>u.rol==='admin'||(u.rol==='regional'&&r.region===u.region)||(u.rol==='encargado'&&r.zona===u.zona);
+ let A={tipo:'estado',nombre:'Todo el estado',region:'',zona:''};
+ if(u.rol==='regional')A={tipo:'region',nombre:u.region,region:u.region,zona:''};
+ if(u.rol==='encargado')A={tipo:'zona',nombre:u.zona,region:u.region,zona:u.zona};
+ if(d.zona&&u.rol!=='encargado'){const z=DB.zonas.find(x=>x.zona===d.zona);A={tipo:'zona',nombre:z.zona,region:z.region,zona:z.zona}}
+ else if(d.region&&u.rol==='admin')A={tipo:'region',nombre:d.region,region:d.region,zona:''};
+ const dentro=r=>A.zona?r.zona===A.zona:A.region?r.region===A.region:true,enR=f=>f.slice(0,10)>=d.desde&&f.slice(0,10)<=d.hasta,hoyS=hoy();
+ const V=()=>({actividades:0,conEvidencia:0,validadas:0,porValidar:0,rechazadas:0,pendientes:0,vencidas:0,visitas:0,servidores:0,servidoresConActividad:0});
+ const T=V(),R={},Z={},P={},tipos={},programas={},resultados={},serie={},ca={t:new Set(),R:{},Z:{}},dias=Math.round((new Date(d.hasta)-new Date(d.desde))/864e5)+1,porMes=dias>62;
+ DB.zonas.filter(dentro).forEach(z=>{R[z.region]=R[z.region]||V();Z[z.zona]=Object.assign(V(),{region:z.region})});
+ const gR=r=>R[r||'Monitores']=R[r||'Monitores']||V();
+ const per=(id,n)=>{if(!P[id]){const p=DB.personal.find(x=>x.id===id)||{};P[id]=Object.assign(V(),{nombre:p.nombre||n,rol:p.rol||'',zona:p.zona||'',region:p.region||''})}return P[id]};
+ DB.personal.forEach(p=>{if(p.rol!=='servidor'||p.estatus!=='Activo'||!dentro(p))return;T.servidores++;if(R[p.region])R[p.region].servidores++;if(Z[p.zona])Z[p.zona].servidores++});
+ const sum=(s,a,v)=>{s.actividades++;if(a.estatus==='Validada'){s.validadas++;s.conEvidencia++}else if(a.estatus==='Con evidencia'){s.porValidar++;s.conEvidencia++}else if(a.estatus==='Rechazada')s.rechazadas++;else if(v)s.vencidas++;else s.pendientes++};
+ DB.acts.forEach(a=>{if(!enR(a.fecha)||!dentro(a)||!alc(a)&&u.rol!=='admin')return;const v=a.estatus==='Pendiente'&&a.fecha<hoyS,h=['Validada','Con evidencia'].includes(a.estatus);
+  sum(T,a,v);sum(gR(a.region),a,v);if(Z[a.zona])sum(Z[a.zona],a,v);sum(per(a.asignadoA,a.asignadoNombre),a,v);
+  const t=tipos[a.tipo]=tipos[a.tipo]||{total:0,cumplidas:0};t.total++;if(h)t.cumplidas++;
+  const k=porMes?a.fecha.slice(0,7):a.fecha,s=serie[k]=serie[k]||{total:0,cumplidas:0,vencidas:0};s.total++;if(h)s.cumplidas++;if(v)s.vencidas++;
+  const p=DB.personal.find(x=>x.id===a.asignadoA);if(p&&p.rol==='servidor'){ca.t.add(p.id);(ca.R[a.region]=ca.R[a.region]||new Set()).add(p.id);if(a.zona)(ca.Z[a.zona]=ca.Z[a.zona]||new Set()).add(p.id)}});
+ T.servidoresConActividad=ca.t.size;Object.keys(R).forEach(r=>R[r].servidoresConActividad=(ca.R[r]||new Set()).size);Object.keys(Z).forEach(z=>Z[z].servidoresConActividad=(ca.Z[z]||new Set()).size);
+ DB.vis.forEach(v=>{if(!enR(v.fecha)||!dentro(v))return;T.visitas++;gR(v.region).visitas++;if(Z[v.zona])Z[v.zona].visitas++;per(v.servidorId,v.servidorNombre).visitas++;programas[v.programa]=(programas[v.programa]||0)+1;resultados[v.resultado]=(resultados[v.resultado]||0)+1});
+ const fin=s=>(s.exigibles=s.actividades-s.pendientes,s.cumplimiento=s.exigibles?Math.round(s.conEvidencia/s.exigibles*100):null,s),lista=o=>Object.keys(o).map(k=>Object.assign(fin(o[k]),{nombre:o[k].nombre||k}));
+ const et=[];for(let f=new Date(d.desde+'T12:00');f<=new Date(d.hasta+'T12:00');f.setDate(f.getDate()+1)){const k=porMes?iso(f).slice(0,7):iso(f);if(!et.includes(k))et.push(k)}
+ return{alcance:A,desde:d.desde,hasta:d.hasta,dias,generado:hoy()+' '+new Date().toTimeString().slice(0,5),generadoPor:u.nombre,total:fin(T),
+  regiones:lista(R).filter(r=>r.nombre!=='Monitores'||r.actividades),zonas:lista(Z),personas:lista(P).filter(p=>p.actividades||p.visitas),tipos,programas,resultados,
+  serieTipo:porMes?'mes':'dia',serie:et.map(k=>Object.assign({etiqueta:k},serie[k]||{total:0,cumplidas:0,vencidas:0}))};
 }
