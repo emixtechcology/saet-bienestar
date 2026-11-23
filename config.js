@@ -3,7 +3,7 @@
    1) Pega en API_URL la URL de tu aplicación web de Apps Script (termina en /exec).
       Si la dejas vacía, la app abre en MODO DEMO con datos de ejemplo.
    2) Aquí también puedes editar los catálogos: tipos de actividad, programas y resultados de visita. */
-const API_URL = 'https://script.google.com/macros/s/AKfycbxLz-5kzspVjT5wm5S4ls2_McrxiQ4zr97Spd3SX3X5sVTJo2iGRdBHqxXdSaCEvSrDUQ/exec';
+const API_URL = 'https://script.google.com/macros/s/AKfycbwykbG_yJfKnmsL9p1XExNT7dQaeeqJzL03mVYp4ZHgKHPAXU3zhHQMXQLSG6rEeAfw9A/exec';
 
 const NOMBRE = 'SAET Bienestar', LEMA = 'Agenda Territorial', SIGLA = 'Sistema de Agenda y Evidencias Territoriales';
 const DEMO = !API_URL;
