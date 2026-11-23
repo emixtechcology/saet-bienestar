@@ -49,5 +49,5 @@ function planearIA(){
  <div id="iaR" style="margin:14px 0"></div><div class="campo">${selector()}</div>
  <button class="btn" style="width:100%" onclick="guardarActs(this,S.borr)">Crear actividades</button>`,640);
 }
-function pedirPlan(b){ocupado(b,async()=>{S.borr=await api('ia',{tipo:'agenda',texto:val('iaT')});pintarPlan()})}
+function pedirPlan(b){ocupado(b,async()=>{S.borr=await api('ia',{tipo:'agenda',texto:val('iaT')},120000);pintarPlan()})}
 function pintarPlan(){$('#iaR').innerHTML=S.borr.map((x,i)=>`<div class="item"><div class="sp"><div class="t">${esc(x.titulo)}</div><div class="s">${esc(x.tipo)} · ${fechaTxt(x.fecha)} ${esc(x.hora||'')} · ${esc(x.lugar||'')}</div></div><button class="btn bad ch" onclick="S.borr.splice(${i},1);pintarPlan()">Quitar</button></div>`).join('')||'<p class="mute sm">Sin actividades propuestas.</p>'}

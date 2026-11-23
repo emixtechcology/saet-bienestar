@@ -28,4 +28,4 @@ function validar(id,v){const e=S.evs.find(x=>x.id===id);if(!e)return;let nota=''
  if(v==='Rechazada'){nota=prompt('Motivo del rechazo (lo verá quien subió la evidencia):');if(nota===null)return}
  Object.assign(e,{validacion:v,validadoPor:S.user.nombre,nota});const a=S.acts.find(x=>x.id===e.actividadId);if(a)a.estatus=v;
  cerrar();pintar();toast('Evidencia '+v.toLowerCase());fondo(api('validarEvidencia',{id,validacion:v,nota}))}
-function verificarIA(id,b){ocupado(b,async()=>{const r=await api('ia',{tipo:'verificar',id});const e=S.evs.find(x=>x.id===id);if(e){Object.assign(e,r,{puntaje:String(r.puntaje)});const p=$('#panelV');if(p)p.innerHTML=panelVerificacion(e)}toast('Revisión con IA lista')})}
+function verificarIA(id,b){ocupado(b,async()=>{const r=await api('ia',{tipo:'verificar',id},120000);const e=S.evs.find(x=>x.id===id);if(e){Object.assign(e,r,{puntaje:String(r.puntaje)});const p=$('#panelV');if(p)p.innerHTML=panelVerificacion(e)}toast('Revisión con IA lista')})}
