@@ -16,7 +16,7 @@ function vSupervision(){
 }
 function cargarSupervision(b,forzar){ocupado(b,async()=>{const R=S.sup;
  if(!R.desde||!R.hasta||R.desde>R.hasta) throw new Error('Revisa las fechas del periodo');
- R.datos=await api('supervision',{desde:R.desde,hasta:R.hasta,...paramsAlcance(R.sel)},120000);R.clave=JSON.stringify([S.user.id,R.desde,R.hasta,R.sel]);pintarSupervision()})}
+ const datos=await api('supervision',{desde:R.desde,hasta:R.hasta,...paramsAlcance(R.sel)},120000);if(S.sup!==R||!S.user)return;R.datos=datos;R.clave=JSON.stringify([S.user.id,R.desde,R.hasta,R.sel]);pintarSupervision()})}
 function filtraSup(p,f){return !f||(f==='sinEvidencia'?p.exigibles>0&&p.conEvidencia===0:f==='sospechosas'?p.evSospechosas>0:f==='rezago'?p.avance!=null&&p.avance<50:f==='sinActividad'?p.asignadas===0:true)}
 /* Niveles de vista según el rol y el alcance elegido */
 function nivelesSup(R){const u=S.user,t=tipoAlcance(R);return t==='estado'?[['region','Por región'],['zona','Por municipio'],['persona','Por persona']]:t==='region'?[['zona','Por municipio'],['persona','Por persona']]:[['persona','Por persona']]}
@@ -31,7 +31,7 @@ function entrarGrupo(nombre){const R=S.sup;if(nombre==='Monitores')return;
  if(R.agrupar==='region'){R.sel='r:'+nombre;R.agrupar='zona'}else{R.sel='z:'+nombre;R.agrupar='persona'}
  vSupervision()}
 function pintarSupervision(){
- const R=S.sup,d=R.datos,el=$('#supCuerpo');if(!el||!d)return;
+ const R=S.sup,d=R&&R.datos,el=$('#supCuerpo');if(!el||!d)return;
  const niveles=nivelesSup(R);if(!niveles.some(n=>n[0]===R.agrupar))R.agrupar=niveles[0][0];
  const q=(R.q||'').toLowerCase(),todas=d.personas.filter(p=>!R.rol||p.rol===R.rol);
  const l=todas.filter(p=>filtraSup(p,R.filtro)&&(!q||(p.nombre+' '+p.zona+' '+p.region).toLowerCase().includes(q)))

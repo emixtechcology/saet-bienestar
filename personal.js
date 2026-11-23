@@ -12,7 +12,7 @@ function vPersonal(){
  const f=S.f,q=(f.q||'').toLowerCase(),cuenta=r=>S.personal.filter(p=>p.rol===r&&p.estatus==='Activo').length;
  const l=S.personal.filter(p=>p.rol!=='admin'&&(!f.rol||p.rol===f.rol)&&(!f.zona||p.zona===f.zona)&&(!f.est||p.estatus===f.est)&&(!q||(p.nombre+p.curp).toLowerCase().includes(q)))
   .sort((a,b)=>(a.estatus==='Pendiente'?0:1)-(b.estatus==='Pendiente'?0:1)||a.nombre.localeCompare(b.nombre));
- $('#vista').innerHTML=`<div class="grid tiles" style="margin-bottom:18px">${[['regional','Regionales'],['encargado','Encargados'],['monitor','Monitores'],['servidor','Servidores de la Nación']].map(([r,t])=>`<div class="tile"><i>${ic('personal')}</i><div><b>${cuenta(r)}</b><span>${t}</span></div></div>`).join('')}</div>
+ $('#vista').innerHTML=`<div class="grid tiles">${[['regional','Regionales'],['encargado','Encargados'],['monitor','Monitores'],['servidor','Servidores de la Nación']].map(([r,t])=>`<div class="tile"><i>${ic('personal')}</i><div><b>${cuenta(r)}</b><span>${t}</span></div></div>`).join('')}</div>
  ${cajaClaves()}
  <div class="filtros"><input placeholder="Buscar nombre o CURP…" value="${esc(f.q||'')}" onchange="S.f.q=this.value;vPersonal()">
   <select onchange="S.f.rol=this.value;vPersonal()"><option value="">Todos los roles</option>${Object.keys(ROL).slice(1).map(r=>`<option value="${r}" ${f.rol===r?'selected':''}>${ROL[r]}</option>`).join('')}</select>

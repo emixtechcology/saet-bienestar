@@ -253,7 +253,7 @@ td{padding:11px 10px;border-top:1px solid var(--linea);vertical-align:middle}
 .seg button:hover{background:#fff}.seg button.on{background:var(--g700);color:#fff;box-shadow:0 2px 6px -2px rgba(74,14,34,.45)}
 .seg button small{font-weight:700;opacity:.7;margin-left:3px}
 /* Estado vacío del reporte */
-.vacio-rep{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-top:18px}
+.vacio-rep{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
 .vr-item{background:#fff;border-radius:var(--r);padding:20px;box-shadow:var(--sombra);display:flex;flex-direction:column;gap:6px}
 .vr-item i{width:40px;height:40px;border-radius:12px;display:flex;align-items:center;justify-content:center;background:color-mix(in srgb,var(--c) 14%,#fff);color:var(--c);margin-bottom:6px}
 .vr-item b{font-family:'Montserrat',sans-serif;font-size:15px}.vr-item span{font-size:13px;color:var(--mute)}
@@ -309,3 +309,50 @@ button.tile2:hover{transform:translateY(-1px)}.tile2.on{outline:2px solid var(--
 @keyframes aparece{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:none}}
 .migas{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:0 0 12px 4px;font-size:13px}.migas button{color:var(--g700);font-weight:600;text-decoration:underline;text-underline-offset:3px}.migas span{color:var(--mute)}
 .ver-por{display:flex;align-items:center;gap:10px}.barra-ver{margin-bottom:10px}
+
+/* ═══ Adaptación a cualquier pantalla (teléfono chico → monitor grande) ═══ */
+/* Espacio uniforme entre bloques: nada queda pegado */
+#vista,#supCuerpo,#repDoc{display:flex;flex-direction:column;gap:18px;min-width:0}
+#vista>*,#supCuerpo>*,#repDoc>*{min-width:0}
+#vista .filtros,#vista .tiles2,#vista .migas,#supCuerpo .filtros,#repDoc .acciones{margin:0}
+#vista>.grid.tiles{margin:0!important}
+/* En monitores grandes el contenido no se estira de más */
+.main{width:100%;max-width:1680px;margin:0 auto;padding:clamp(14px,2.2vw,28px) clamp(14px,2.4vw,32px) 48px}
+.top h1{font-size:clamp(20px,2.2vw,28px)}
+/* Panel de filtros: se reacomoda según su propio ancho */
+.panel-filtros{container-type:inline-size}
+.pf-grid{grid-template-columns:minmax(0,2fr) minmax(0,1fr) minmax(0,1fr)}
+@container (max-width:1060px){.pf-grid{grid-template-columns:1fr 1fr}.pf-grid>.pf-bloque:first-child{grid-column:1/-1}}
+@container (max-width:560px){.pf-grid{grid-template-columns:1fr}.pf-cab{flex-direction:column}.pf-cab .btn{width:100%}}
+.pf-bloque .seg{flex-wrap:wrap;overflow:visible;align-self:flex-start}
+@container (max-width:560px){.pf-bloque .seg{display:grid;grid-template-columns:1fr 1fr;align-self:stretch}.pf-bloque .seg button{white-space:normal}.pf-bloque .seg button:last-child:nth-child(odd){grid-column:1/-1}}
+/* Indicadores: 6 en escritorio, 3 en tableta, 2 en teléfono */
+.tiles2{grid-template-columns:repeat(6,minmax(0,1fr))}
+.tiles2:has(> :nth-child(5):last-child){grid-template-columns:repeat(5,minmax(0,1fr))}
+@media(max-width:1180px){.tiles2,.tiles2:has(> :nth-child(5):last-child){grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media(max-width:600px){.tiles2,.tiles2:has(> :nth-child(5):last-child),.tiles2.compactos{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.tile2 b{font-size:clamp(19px,2vw,24px)}
+/* Tablas: siempre se deslizan dentro de su tarjeta, nunca rompen la página */
+.tabla{overflow-x:auto;-webkit-overflow-scrolling:touch;max-width:100%}
+/* Filtros en fila: en pantallas chicas cada control ocupa el ancho */
+@media(max-width:600px){.filtros>input,.filtros>select{flex:1 1 100%;min-width:0;width:100%}.filtros .seg{width:100%}.barra-ver .ver-por{width:100%}.ver-por .seg{flex:1}}
+/* Ventanas emergentes cómodas en cualquier tamaño */
+.caja{max-width:min(var(--ancho,560px),100%)}
+@media(max-width:600px){#modal{padding:0;align-items:flex-end}.caja{border-radius:22px 22px 0 0;padding:20px 16px 28px;min-height:60vh}}
+/* Teléfonos muy chicos (320–360 px) */
+@media(max-width:360px){body{font-size:13.5px}.main{padding:12px 10px 40px}.card{padding:14px}.btn{padding:10px 12px}.tabs button{padding:8px 10px}.kpis{grid-template-columns:1fr 1fr}}
+/* Pantallas de TV o muy anchas: un poco más de aire */
+@media(min-width:1900px){body{font-size:15px}.side{width:260px}}
+@media(max-width:600px){#modal{padding:6vh 0 0;align-items:flex-start}.caja{margin-top:auto}}
+/* Rejillas que nunca se ensanchan por su contenido */
+.grid>*{min-width:0}
+.dash{grid-template-columns:minmax(0,1fr) 310px}
+@media(max-width:1100px){.dash{grid-template-columns:minmax(0,1fr)}.tiles{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.tile{min-width:0}.tile>div{min-width:0}.tile span{display:block;overflow-wrap:anywhere}
+@media(max-width:400px){.tile{padding:12px;gap:9px}.tile i{width:36px;height:36px;border-radius:11px}.tile b{font-size:21px}}
+.clave{flex-wrap:wrap;row-gap:8px}.clave .sp{flex:1 1 140px}
+.hero h2,.hero p{overflow-wrap:anywhere}
+.item{min-width:0}.item .sp{min-width:0}.item .t,.item .s{overflow-wrap:anywhere}
+@media(max-width:400px){.item{flex-wrap:wrap}.item>.btn{margin-left:auto}}
+.vacio-rep{grid-template-columns:repeat(3,minmax(0,1fr))}
+@media(max-width:700px){.vacio-rep{grid-template-columns:1fr}}
