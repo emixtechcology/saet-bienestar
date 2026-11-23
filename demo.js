@@ -17,8 +17,8 @@ function sembrarDemo(){
   const jefeP=DB.personal.find(x=>p.rol==='monitor'?x.id===p.id:x.rol==='regional'&&x.region===p.region);
   for(let i=0;i<(p.rol==='encargado'?1:2+rnd(3));i++){const t=rnd(T.length),d=rnd(7),f=iso(mas(sem,d)),pas=f<hoy(),est=pas?(rnd(10)<7?(rnd(3)?'Validada':'Con evidencia'):'Pendiente'):(f===hoy()&&rnd(3)===0?'Con evidencia':'Pendiente');
    const a={id:'A'+(++n),grupo:'G'+n,titulo:T[t],tipo:TT[t],descripcion:'Reportar resultado y tomar foto del lugar.',fecha:f,hora:['08:00','09:00','10:30','12:00','16:00'][rnd(5)],lugar:L[rnd(L.length)],region:p.region,zona:p.zona,asignadoA:p.id,asignadoNombre:p.nombre,creadoPor:jefeP.id,creadoNombre:jefeP.nombre,estatus:est,creado:hoy()};DB.acts.push(a);
-   if(est!=='Pendiente'){const e={id:'E'+n,actividadId:a.id,usuarioId:p.id,usuarioNombre:p.nombre,region:p.region,zona:p.zona,fecha:f+' 14:'+String(10+rnd(49)),fotos:img(n)+' | '+img(n+1),comentario:'Actividad realizada sin contratiempos.',lat:'17.9869',lng:'-92.9303',validacion:est==='Validada'?'Validada':'Por validar',validadoPor:est==='Validada'?jefeP.nombre:'',nota:'',ia:''};DB.evs.push(e);
-    if(a.tipo.startsWith('Visita'))for(let v=0;v<2+rnd(4);v++)DB.vis.push({id:'V'+n+'_'+v,actividadId:a.id,evidenciaId:e.id,servidorId:p.id,servidorNombre:p.nombre,region:p.region,zona:p.zona,fecha:f,nombre:nom(),curp:'',telefono:'993'+String(1000000+rnd(8999999)),domicilio:'Calle '+(1+rnd(40))+' s/n',localidad:a.lugar,programa:PROGRAMAS[rnd(PROGRAMAS.length)],motivo:'Seguimiento',resultado:RESULTADOS[rnd(RESULTADOS.length)],observaciones:''})}}});
+   if(est!=='Pendiente'){const e={id:'E'+n,actividadId:a.id,usuarioId:p.id,usuarioNombre:p.nombre,region:p.region,zona:p.zona,fecha:f+' 14:'+String(10+rnd(49)),fotos:img(n)+' | '+img(n+1),comentario:'Actividad realizada sin contratiempos.',...punto(p.zona),validacion:est==='Validada'?'Validada':'Por validar',validadoPor:est==='Validada'?jefeP.nombre:'',nota:'',...verifDemo(n,f,rnd)};DB.evs.push(e);
+    if(a.tipo.startsWith('Visita'))for(let v=0;v<2+rnd(4);v++)DB.vis.push({id:'V'+n+'_'+v,actividadId:a.id,evidenciaId:e.id,servidorId:p.id,servidorNombre:p.nombre,region:p.region,zona:p.zona,fecha:f,nombre:nom(),curp:'',telefono:'993'+String(1000000+rnd(8999999)),domicilio:'Calle '+(1+rnd(40))+' s/n',localidad:a.lugar,programa:PROGRAMAS[rnd(PROGRAMAS.length)],motivo:'Seguimiento',resultado:RESULTADOS[rnd(RESULTADOS.length)],observaciones:'',...punto(p.zona)})}}});
 }
 function demoApi(accion,d){
  const u=S.user,alc=r=>!u?false:u.rol==='admin'||(u.rol==='regional'&&r.region===u.region)||(u.rol==='encargado'&&r.zona===u.zona),copia=x=>JSON.parse(JSON.stringify(x));
@@ -37,7 +37,7 @@ function demoApi(accion,d){
    const asg=(u.rol==='monitor'?[u.id]:d.asignados).map(i=>DB.personal.find(p=>p.id===i));if(!asg.length) throw new Error('Elige al menos a una persona');
    const nuevas=[];d.actividades.forEach(x=>asg.forEach(p=>nuevas.push({id:id('A'),grupo:'G',titulo:x.titulo,tipo:x.tipo||'Otra',descripcion:x.descripcion||'',fecha:x.fecha,hora:x.hora||'',lugar:x.lugar||'',region:p.region,zona:p.zona,asignadoA:p.id,asignadoNombre:p.nombre,creadoPor:u.id,creadoNombre:u.nombre,estatus:'Pendiente',creado:hoy()})));DB.acts.push(...nuevas);return{nuevas}}
   if(accion==='eliminarActividad'){DB.acts=DB.acts.filter(a=>a.id!==d.id);return{}}
-  if(accion==='subirEvidencia'){const a=DB.acts.find(x=>x.id===d.actividadId),e={id:d.id||id('E'),actividadId:a.id,usuarioId:u.id,usuarioNombre:u.nombre,region:a.region,zona:a.zona,fecha:hoy()+' '+new Date().toTimeString().slice(0,5),fotos:d.fotos.join(' | '),comentario:d.comentario,lat:String(d.lat),lng:String(d.lng),validacion:'Por validar',validadoPor:'',nota:'',ia:''};DB.evs.push(e);a.estatus='Con evidencia';
+  if(accion==='subirEvidencia'){const a=DB.acts.find(x=>x.id===d.actividadId),e={id:d.id||id('E'),actividadId:a.id,usuarioId:u.id,usuarioNombre:u.nombre,region:a.region,zona:a.zona,fecha:hoy()+' '+new Date().toTimeString().slice(0,5),fotos:d.fotos.join(' | '),comentario:d.comentario,lat:String(d.lat),lng:String(d.lng),validacion:'Por validar',validadoPor:'',nota:'',ia:''};Object.assign(e,demoVerificar(e,a,d.meta||[]));DB.evs.push(e);a.estatus='Con evidencia';
    return{}}
   if(accion==='guardarVisita'){const i=DB.vis.findIndex(v=>v.id===d.id),a=DB.acts.find(x=>x.id===d.actividadId),n={...(i>-1?DB.vis[i]:{evidenciaId:'',servidorId:u.id,servidorNombre:u.nombre,fecha:hoy()}),...d,region:a?a.region:u.region,zona:a?a.zona:u.zona};i>-1?DB.vis[i]=n:DB.vis.push(n);return{visita:n}}
   if(accion==='eliminarVisita'){DB.vis=DB.vis.filter(v=>v.id!==d.id);return{}}
@@ -47,9 +47,11 @@ function demoApi(accion,d){
   if(accion==='resetPin') return{pin:'739105',usuario:DB.personal.find(p=>p.id===d.id).curp};
   if(accion==='actualizarPerfil'){const p=DB.personal.find(x=>x.id===u.id);['correo','telefono','facebook','instagram','selfie'].forEach(k=>{if(d[k]!=null)p[k]=d[k]});return{usuario:p}}
   if(accion==='reporte') return demoReporte(u,d);
+  if(accion==='supervision') return demoSupervision(u,d);
+  if(accion==='fichaPersona'){const p=DB.personal.find(x=>x.id===d.id),en=f=>f.slice(0,10)>=d.desde&&f.slice(0,10)<=d.hasta,acts=DB.acts.filter(a=>a.asignadoA===p.id&&en(a.fecha)),ids=new Set(acts.map(a=>a.id));return{persona:p,actividades:acts,evidencias:DB.evs.filter(e=>ids.has(e.actividadId)),visitas:DB.vis.filter(v=>v.servidorId===p.id&&en(v.fecha))}}
   if(accion==='analisisReporte') return{texto:'Ejemplo de demo. Con tu clave de Gemini, aquí aparece un análisis para el delegado: panorama general, dónde se va bien, dónde hay rezago y tres acciones concretas para la próxima semana, usando solo los números de este reporte.'};
   if(accion==='ia'){if(d.tipo==='agenda') return[{titulo:'Asamblea informativa',tipo:'Asamblea informativa',fecha:iso(mas(lunes(new Date()),1)),hora:'09:00',lugar:'Parque de Tamulté',descripcion:''},{titulo:'Visitas domiciliarias',tipo:'Visita domiciliaria',fecha:iso(mas(lunes(new Date()),2)),hora:'',lugar:'Col. Gaviotas',descripcion:''},{titulo:'Reunión de trabajo',tipo:'Reunión de trabajo',fecha:iso(mas(lunes(new Date()),4)),hora:'10:00',lugar:'Delegación',descripcion:''}];
-   if(d.tipo==='verificar') return{ia:'✔ La foto muestra una actividad en campo acorde con la tarea (ejemplo de demo).'};
+   if(d.tipo==='verificar'){const e=DB.evs.find(x=>x.id===d.id);e.ia='Personas reunidas al aire libre con lonas del programa · Foto real · coherente con la actividad · 6 personas (confianza alta) — ejemplo de demo';return{ia:e.ia,puntaje:e.puntaje,verificacion:e.verificacion,alertas:e.alertas}}
    return{texto:'Ejemplo de demo: al conectar tu clave de Gemini, aquí aparecerá el resumen ejecutivo de la semana con avance general, zonas destacadas, zonas rezagadas y recomendaciones, redactado a partir de tus datos reales.'}}
   throw new Error('Acción no disponible en demo')})()))}catch(e){no(e)}},220));
 }
@@ -62,7 +64,7 @@ function demoReporte(u,d){
  if(d.zona&&u.rol!=='encargado'){const z=DB.zonas.find(x=>x.zona===d.zona);A={tipo:'zona',nombre:z.zona,region:z.region,zona:z.zona}}
  else if(d.region&&u.rol==='admin')A={tipo:'region',nombre:d.region,region:d.region,zona:''};
  const dentro=r=>A.zona?r.zona===A.zona:A.region?r.region===A.region:true,enR=f=>f.slice(0,10)>=d.desde&&f.slice(0,10)<=d.hasta,hoyS=hoy();
- const V=()=>({actividades:0,conEvidencia:0,validadas:0,porValidar:0,rechazadas:0,pendientes:0,vencidas:0,visitas:0,servidores:0,servidoresConActividad:0});
+ const V=()=>({actividades:0,conEvidencia:0,validadas:0,porValidar:0,rechazadas:0,pendientes:0,vencidas:0,visitas:0,servidores:0,servidoresConActividad:0,evConfiables:0,evRevisar:0,evSospechosas:0});
  const T=V(),R={},Z={},P={},tipos={},programas={},resultados={},serie={},ca={t:new Set(),R:{},Z:{}},dias=Math.round((new Date(d.hasta)-new Date(d.desde))/864e5)+1,porMes=dias>62;
  DB.zonas.filter(dentro).forEach(z=>{R[z.region]=R[z.region]||V();Z[z.zona]=Object.assign(V(),{region:z.region})});
  const gR=r=>R[r||'Monitores']=R[r||'Monitores']||V();
@@ -75,10 +77,54 @@ function demoReporte(u,d){
   const k=porMes?a.fecha.slice(0,7):a.fecha,s=serie[k]=serie[k]||{total:0,cumplidas:0,vencidas:0};s.total++;if(h)s.cumplidas++;if(v)s.vencidas++;
   const p=DB.personal.find(x=>x.id===a.asignadoA);if(p&&p.rol==='servidor'){ca.t.add(p.id);(ca.R[a.region]=ca.R[a.region]||new Set()).add(p.id);if(a.zona)(ca.Z[a.zona]=ca.Z[a.zona]||new Set()).add(p.id)}});
  T.servidoresConActividad=ca.t.size;Object.keys(R).forEach(r=>R[r].servidoresConActividad=(ca.R[r]||new Set()).size);Object.keys(Z).forEach(z=>Z[z].servidoresConActividad=(ca.Z[z]||new Set()).size);
+ const actR=new Map(DB.acts.filter(a=>enR(a.fecha)&&dentro(a)).map(a=>[a.id,a]));DB.evs.forEach(e=>{const a=actR.get(e.actividadId),k={Confiable:'evConfiables',Revisar:'evRevisar',Sospechosa:'evSospechosas'}[e.verificacion];if(!a||!k)return;T[k]++;gR(a.region)[k]++;if(Z[a.zona])Z[a.zona][k]++;per(a.asignadoA,a.asignadoNombre)[k]++});
  DB.vis.forEach(v=>{if(!enR(v.fecha)||!dentro(v))return;T.visitas++;gR(v.region).visitas++;if(Z[v.zona])Z[v.zona].visitas++;per(v.servidorId,v.servidorNombre).visitas++;programas[v.programa]=(programas[v.programa]||0)+1;resultados[v.resultado]=(resultados[v.resultado]||0)+1});
  const fin=s=>(s.exigibles=s.actividades-s.pendientes,s.cumplimiento=s.exigibles?Math.round(s.conEvidencia/s.exigibles*100):null,s),lista=o=>Object.keys(o).map(k=>Object.assign(fin(o[k]),{nombre:o[k].nombre||k}));
  const et=[];for(let f=new Date(d.desde+'T12:00');f<=new Date(d.hasta+'T12:00');f.setDate(f.getDate()+1)){const k=porMes?iso(f).slice(0,7):iso(f);if(!et.includes(k))et.push(k)}
  return{alcance:A,desde:d.desde,hasta:d.hasta,dias,generado:hoy()+' '+new Date().toTimeString().slice(0,5),generadoPor:u.nombre,total:fin(T),
   regiones:lista(R).filter(r=>r.nombre!=='Monitores'||r.actividades),zonas:lista(Z),personas:lista(P).filter(p=>p.actividades||p.visitas),tipos,programas,resultados,
   serieTipo:porMes?'mes':'dia',serie:et.map(k=>Object.assign({etiqueta:k},serie[k]||{total:0,cumplidas:0,vencidas:0}))};
+}
+
+/* Coordenadas aproximadas de cada municipio (solo para el mapa de ejemplo) */
+const COORD_DEMO={'Jalpa de Méndez':[18.18,-93.06],'Nacajuca':[18.17,-93.02],'Cárdenas':[18.0,-93.37],'Comalcalco':[18.26,-93.22],'Cunduacán':[18.07,-93.17],'Huimanguillo':[17.83,-93.39],'Paraíso':[18.4,-93.21],'Jalapa':[17.72,-92.81],'Tacotalpa':[17.59,-92.82],'Teapa':[17.55,-92.95],'Balancán':[17.81,-91.53],'Emiliano Zapata':[17.74,-91.77],'Tenosique':[17.47,-91.42],'Centla':[18.53,-92.65],'Jonuta':[18.09,-92.14],'Macuspana':[17.76,-92.6]};
+function punto(zona){const c=COORD_DEMO[zona]||(zona&&zona.startsWith('Centro')?[17.99+(+zona.slice(-1)-3.5)*.012,-92.93+(+zona.slice(-1)%3-1)*.02]:[17.99,-92.93]);
+ return{lat:(c[0]+(Math.random()-.5)*.03).toFixed(5),lng:(c[1]+(Math.random()-.5)*.03).toFixed(5)}}
+function verifDemo(n,fecha,rnd){
+ const h=()=>Array.from({length:16},()=>'0123456789abcdef'[rnd(16)]).join(''),r=rnd(10),cam={exifFecha:fecha+' 11:2'+rnd(9),exifModelo:['Samsung SM-A145M','Motorola moto g32','Xiaomi Redmi Note 12','Apple iPhone 11'][rnd(4)],origen:'camara',tipo:'image/jpeg'};
+ if(r<7){const p=78+rnd(21);return{huellas:h(),verificacion:'Confiable',puntaje:String(p),alertas:p<90?'GAL:Las fotos se eligieron de la galería, no se tomaron en el momento':'',metadatos:JSON.stringify({fotos:[{...cam,hash:h()}],base:p}),ia:rnd(2)?'Grupo de personas en una asamblea comunitaria · Foto real · coherente con la actividad (confianza alta)':''}}
+ if(r<9){const p=45+rnd(24);return{huellas:h(),verificacion:'Revisar',puntaje:String(p),alertas:'EXIF:Ninguna foto trae datos de cámara (posible captura de pantalla o imagen reenviada) | FECHA:Foto tomada el 2026-10-02; la actividad era el '+fecha,metadatos:JSON.stringify({fotos:[{hash:h(),origen:'galeria',tipo:'image/jpeg'}],base:p}),ia:''}}
+ const p=8+rnd(25);return{huellas:h(),verificacion:'Sospechosa',puntaje:String(p),alertas:'DUP:Foto repetida: igual a la evidencia de otro servidor del '+fecha+' | PNG:Hay imágenes PNG; las capturas de pantalla suelen guardarse así | IA_REAL:La IA indica que parece captura de pantalla',metadatos:JSON.stringify({fotos:[{hash:h(),origen:'galeria',tipo:'image/png'}],base:p+45}),ia:'Captura de pantalla de un chat con una foto · No parece foto real · coherente con la actividad (confianza media)'}
+}
+/* Versión del demo de la revisión automática del servidor (Verificacion.gs) */
+function demoVerificar(ev,a,metas){
+ const al=[];let p=100;const pon=(c,t,n)=>{al.push(c+':'+t);p-=n};
+ const otras=DB.evs.filter(x=>x.huellas).flatMap(x=>x.huellas.split(',').map(h=>[h,x]));
+ const dup=metas.map(m=>otras.find(([h])=>distHuella(h,m.hash)<=10)).find(Boolean);
+ const dupI=metas.some((m,i)=>metas.slice(0,i).some(n=>distHuella(m.hash,n.hash)<=10));
+ if(!dup&&dupI) pon('DUP','Subió la misma foto más de una vez en este envío',15);
+ if(dup) pon('DUP','Foto repetida: igual a '+(dup[1].usuarioId===ev.usuarioId?'otra evidencia suya':'la evidencia de '+dup[1].usuarioNombre)+' del '+dup[1].fecha.slice(0,10),60);
+ const sin=metas.filter(m=>!m.exifFecha&&!m.exifModelo).length;
+ if(metas.length&&sin===metas.length) pon('EXIF','Ninguna foto trae datos de cámara (posible captura de pantalla o imagen reenviada)',20); else if(sin) pon('EXIF',sin+' de '+metas.length+' fotos no traen datos de cámara',8);
+ if(metas.some(m=>/png/i.test(m.tipo))) pon('PNG','Hay imágenes PNG; las capturas de pantalla suelen guardarse así',15);
+ const fu=metas.find(m=>m.exifFecha&&Math.abs((new Date(m.exifFecha.slice(0,10))-new Date(a.fecha))/864e5)>1);if(fu) pon('FECHA','Foto tomada el '+fu.exifFecha.slice(0,10)+'; la actividad era el '+a.fecha,25);
+ if(metas.length&&metas.every(m=>m.origen==='galeria')) pon('GAL','Las fotos se eligieron de la galería, no se tomaron en el momento',5);
+ if(!ev.lat) pon('GPS','No se registró la ubicación al enviar',10);
+ p=Math.max(0,p);return{huellas:metas.map(m=>m.hash).filter(Boolean).join(','),puntaje:String(p),verificacion:p>=70?'Confiable':p>=40?'Revisar':'Sospechosa',alertas:al.join(' | '),metadatos:JSON.stringify({fotos:metas,base:p})};
+}
+function demoSupervision(u,d){
+ let A={tipo:'estado',nombre:'Todo el estado',region:'',zona:''};
+ if(u.rol==='regional')A={tipo:'region',nombre:u.region,region:u.region,zona:''};if(u.rol==='encargado')A={tipo:'zona',nombre:u.zona,region:u.region,zona:u.zona};
+ if(d.zona&&u.rol!=='encargado'){const z=DB.zonas.find(x=>x.zona===d.zona);A={tipo:'zona',nombre:z.zona,region:z.region,zona:z.zona}}else if(d.region&&u.rol==='admin')A={tipo:'region',nombre:d.region,region:d.region,zona:''};
+ const dentro=r=>A.zona?r.zona===A.zona:A.region?r.region===A.region:true,en=f=>f.slice(0,10)>=d.desde&&f.slice(0,10)<=d.hasta,hoyS=hoy(),P={},puntos=[];
+ const fila=p=>P[p.id]=P[p.id]||{id:p.id,nombre:p.nombre,rol:p.rol,zona:p.zona,region:p.region,selfie:p.selfie,telefono:p.telefono,asignadas:0,exigibles:0,conEvidencia:0,validadas:0,vencidas:0,rechazadas:0,evidencias:0,evConfiables:0,evRevisar:0,evSospechosas:0,evSinRevisar:0,duplicadas:0,visitas:0,localidades:{},ultima:''};
+ DB.personal.forEach(p=>{if(p.estatus==='Activo'&&['servidor','encargado','monitor'].includes(p.rol)&&dentro(p)&&p.id!==u.id&&(u.rol==='admin'||p.region===u.region&&(u.rol==='regional'||p.zona===u.zona)))fila(p)});
+ const acts={};DB.acts.forEach(a=>{if(!en(a.fecha)||!dentro(a))return;const p=DB.personal.find(x=>x.id===a.asignadoA);if(!p||p.id===u.id||!P[p.id]&&u.rol!=='admin')return;acts[a.id]=a;const f=fila(p);f.asignadas++;
+  if(!(a.estatus==='Pendiente'&&a.fecha>=hoyS))f.exigibles++;if(['Validada','Con evidencia'].includes(a.estatus))f.conEvidencia++;if(a.estatus==='Validada')f.validadas++;if(a.estatus==='Pendiente'&&a.fecha<hoyS)f.vencidas++});
+ DB.evs.forEach(e=>{const a=acts[e.actividadId];if(!a)return;const f=P[a.asignadoA];if(!f)return;f.evidencias++;
+  if(e.verificacion==='Confiable')f.evConfiables++;else if(e.verificacion==='Revisar')f.evRevisar++;else if(e.verificacion==='Sospechosa')f.evSospechosas++;else f.evSinRevisar++;
+  if(String(e.alertas).includes('DUP:'))f.duplicadas++;if(e.fecha>f.ultima)f.ultima=e.fecha;if(e.lat)puntos.push({tipo:'evidencia',lat:+e.lat,lng:+e.lng,persona:f.nombre,personaId:f.id,fecha:e.fecha.slice(0,10),titulo:a.titulo,estado:e.verificacion||'Sin revisar'})});
+ DB.vis.forEach(v=>{if(!en(v.fecha)||!dentro(v))return;const f=P[v.servidorId];if(!f)return;f.visitas++;if(v.localidad)f.localidades[v.localidad]=(f.localidades[v.localidad]||0)+1;
+  if(v.lat)puntos.push({tipo:'visita',lat:+v.lat,lng:+v.lng,persona:f.nombre,personaId:f.id,fecha:v.fecha,titulo:v.localidad+' · '+v.programa,estado:v.resultado})});
+ return{alcance:A,desde:d.desde,hasta:d.hasta,generado:hoy(),puntos,personas:Object.values(P).map(f=>(f.avance=f.exigibles?Math.round(f.conEvidencia/f.exigibles*100):null,f.localidades=Object.keys(f.localidades).sort((a,b)=>f.localidades[b]-f.localidades[a]),f))};
 }

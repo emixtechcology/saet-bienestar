@@ -51,6 +51,8 @@ function hallazgos(t,hijos,personas,nivel){
  if(sin.length) h.push(`Sin actividades registradas (${sin.length}): ${sin.slice(0,6).map(x=>esc(x.nombre)).join(', ')}${sin.length>6?'…':''}.`);
  if(t.vencidas) h.push(`<b>${num(t.vencidas)}</b> actividades vencidas sin evidencia (${pct(t.vencidas,t.exigibles)}% de las que ya debían hacerse).`);
  if(t.porValidar) h.push(`${num(t.porValidar)} evidencias esperan validación de su encargado o regional.`);
+ const evT=(t.evConfiables||0)+(t.evRevisar||0)+(t.evSospechosas||0);
+ if(evT) h.push(`Calidad de evidencias: <b>${pct(t.evConfiables,evT)}%</b> confiables${t.evSospechosas?`, <b style="color:var(--bad)">${num(t.evSospechosas)} sospechosas</b> (fotos repetidas, sin datos de cámara o fuera de fecha)`:''}.`);
  if(t.rechazadas) h.push(`${num(t.rechazadas)} evidencias fueron rechazadas y deben volver a subirse.`);
  if(t.servidores) h.push(`${num(t.servidoresConActividad)} de ${num(t.servidores)} servidores de la nación tuvieron actividades (${pct(t.servidoresConActividad,t.servidores)}%).`);
  if(t.visitas){h.push(`${num(t.visitas)} personas visitadas en el periodo.`)}
@@ -60,12 +62,12 @@ function hallazgos(t,hijos,personas,nivel){
 /* ── Tablas ── */
 function tablaHijos(lista,conRegion){
  const l=lista.slice().sort((a,b)=>(b.cumplimiento??-1)-(a.cumplimiento??-1)||b.actividades-a.actividades);
- return`<div class="tabla"><table class="tr"><tr><th>#</th><th>${conRegion?'Municipio / distrito':'Nombre'}</th>${conRegion?'<th>Región</th>':''}<th style="min-width:150px">Cumplimiento</th><th>Program.</th><th>Exigibles</th><th>Con evid.</th><th>Validadas</th><th>Vencidas</th><th>Visitas</th><th>Servidores<br><small>con act. / total</small></th></tr>
- ${l.map((x,i)=>`<tr><td class="mute">${x.actividades?i+1:'—'}</td><td><b>${esc(x.nombre)}</b></td>${conRegion?`<td class="sm mute">${esc(x.region||'')}</td>`:''}<td>${semaforoChip(x.cumplimiento)}</td><td>${num(x.actividades)}</td><td>${num(x.exigibles)}</td><td>${num(x.conEvidencia)}</td><td>${num(x.validadas)}</td><td>${x.vencidas?`<b style="color:var(--bad)">${num(x.vencidas)}</b>`:0}</td><td>${num(x.visitas)}</td><td>${num(x.servidoresConActividad)} / ${num(x.servidores)}</td></tr>`).join('')||'<tr><td colspan="11" class="vacio">Sin datos.</td></tr>'}</table></div>`}
+ return`<div class="tabla"><table class="tr"><tr><th>#</th><th>${conRegion?'Municipio / distrito':'Nombre'}</th>${conRegion?'<th>Región</th>':''}<th style="min-width:150px">Cumplimiento</th><th>Program.</th><th>Exigibles</th><th>Con evid.</th><th>Validadas</th><th>Vencidas</th><th>Evid. sosp.</th><th>Visitas</th><th>Servidores<br><small>con act. / total</small></th></tr>
+ ${l.map((x,i)=>`<tr><td class="mute">${x.actividades?i+1:'—'}</td><td><b>${esc(x.nombre)}</b></td>${conRegion?`<td class="sm mute">${esc(x.region||'')}</td>`:''}<td>${semaforoChip(x.cumplimiento)}</td><td>${num(x.actividades)}</td><td>${num(x.exigibles)}</td><td>${num(x.conEvidencia)}</td><td>${num(x.validadas)}</td><td>${x.vencidas?`<b style="color:var(--bad)">${num(x.vencidas)}</b>`:0}</td><td>${x.evSospechosas?`<b style="color:var(--bad)">${num(x.evSospechosas)}</b>`:0}</td><td>${num(x.visitas)}</td><td>${num(x.servidoresConActividad)} / ${num(x.servidores)}</td></tr>`).join('')||'<tr><td colspan="12" class="vacio">Sin datos.</td></tr>'}</table></div>`}
 function tablaPersonas(lista,lim){
  const l=lista.slice().sort((a,b)=>(b.cumplimiento??-1)-(a.cumplimiento??-1)||b.conEvidencia-a.conEvidencia).slice(0,lim||500);
- return`<div class="tabla"><table class="tr"><tr><th>#</th><th>Nombre</th><th>Zona</th><th style="min-width:150px">Cumplimiento</th><th>Program.</th><th>Exigibles</th><th>Con evid.</th><th>Vencidas</th><th>Visitas</th></tr>
- ${l.map((x,i)=>`<tr><td class="mute">${i+1}</td><td><b>${esc(x.nombre)}</b><br><small class="mute">${ROL[x.rol]||''}</small></td><td class="sm">${esc(x.zona||'—')}</td><td>${semaforoChip(x.cumplimiento)}</td><td>${num(x.actividades)}</td><td>${num(x.exigibles)}</td><td>${num(x.conEvidencia)}</td><td>${x.vencidas?`<b style="color:var(--bad)">${num(x.vencidas)}</b>`:0}</td><td>${num(x.visitas)}</td></tr>`).join('')||'<tr><td colspan="9" class="vacio">Sin actividades en el periodo.</td></tr>'}</table></div>`}
+ return`<div class="tabla"><table class="tr"><tr><th>#</th><th>Nombre</th><th>Zona</th><th style="min-width:150px">Cumplimiento</th><th>Program.</th><th>Exigibles</th><th>Con evid.</th><th>Vencidas</th><th>Evid. sosp.</th><th>Visitas</th></tr>
+ ${l.map((x,i)=>`<tr><td class="mute">${i+1}</td><td><b>${esc(x.nombre)}</b><br><small class="mute">${ROL[x.rol]||''}</small></td><td class="sm">${esc(x.zona||'—')}</td><td>${semaforoChip(x.cumplimiento)}</td><td>${num(x.actividades)}</td><td>${num(x.exigibles)}</td><td>${num(x.conEvidencia)}</td><td>${x.vencidas?`<b style="color:var(--bad)">${num(x.vencidas)}</b>`:0}</td><td>${x.evSospechosas?`<b style="color:var(--bad)">${num(x.evSospechosas)}</b>`:0}</td><td>${num(x.visitas)}</td></tr>`).join('')||'<tr><td colspan="10" class="vacio">Sin actividades en el periodo.</td></tr>'}</table></div>`}
 function listaCorta(lista,titulo,vacio){return`<div><h4 class="sub">${titulo}</h4>${lista.length?lista.map(x=>`<div class="item"><div class="sp"><div class="t">${esc(x.nombre)}</div><div class="s">${esc(x.zona||'')} · ${x.conEvidencia}/${x.exigibles} con evidencia${x.vencidas?` · ${x.vencidas} vencidas`:''}</div></div>${semaforoChip(x.cumplimiento)}</div>`).join(''):`<div class="vacio sm">${vacio}</div>`}</div>`}
 
 /* ── KPIs ── */
@@ -75,6 +77,7 @@ function kpis(t){return`<div class="kpis">
  <div class="kpi"><b>${num(t.validadas)}</b><span>Validadas</span></div>
  <div class="kpi"><b>${num(t.porValidar)}</b><span>Por validar</span></div>
  <div class="kpi alerta"><b>${num(t.vencidas)}</b><span>Vencidas</span></div>
+ <div class="kpi alerta" title="Confiables: ${num(t.evConfiables)} · Por revisar: ${num(t.evRevisar)}"><b>${num(t.evSospechosas)}</b><span>Evidencias sospechosas<br><small>${num(t.evConfiables)} confiables · ${num(t.evRevisar)} por revisar</small></span></div>
  <div class="kpi"><b>${num(t.visitas)}</b><span>Personas visitadas</span></div>
  <div class="kpi"><b>${num(t.servidoresConActividad)}<small>/${num(t.servidores)}</small></b><span>Servidores con actividad</span></div></div>`}
 
@@ -102,7 +105,7 @@ function docReporte(r,iaTexto,paquete){
 }
 
 /* ── Paquete: una hoja por cada región (o por cada municipio si el reporte es de una región) ── */
-function sumaStats(lista){const s={actividades:0,conEvidencia:0,validadas:0,porValidar:0,rechazadas:0,pendientes:0,vencidas:0,visitas:0,servidores:0,servidoresConActividad:0};
+function sumaStats(lista){const s={actividades:0,conEvidencia:0,validadas:0,porValidar:0,rechazadas:0,pendientes:0,vencidas:0,visitas:0,servidores:0,servidoresConActividad:0,evConfiables:0,evRevisar:0,evSospechosas:0};
  lista.forEach(x=>Object.keys(s).forEach(k=>s[k]+=x[k]||0));s.exigibles=s.actividades-s.pendientes;s.cumplimiento=s.exigibles?Math.round(s.conEvidencia/s.exigibles*100):null;return s}
 function paqueteHojas(r){
  const est=r.alcance.tipo==='estado',personas=r.personas;
@@ -117,9 +120,9 @@ function paqueteHojas(r){
 /* ── Salidas: PDF, Excel, WhatsApp ── */
 function imprimirReporte(){document.body.classList.add('imprimiendo');setTimeout(()=>{window.print();setTimeout(()=>document.body.classList.remove('imprimiendo'),500)},60)}
 function excelReporte(r){
- const fila=x=>({'Nombre':x.nombre,'Cumplimiento %':x.cumplimiento??'','Exigibles':x.exigibles,'Semáforo':SEMAFORO(x.cumplimiento).t,'Actividades':x.actividades,'Con evidencia':x.conEvidencia,'Validadas':x.validadas,'Por validar':x.porValidar,'Rechazadas':x.rechazadas,'Pendientes':x.pendientes,'Vencidas':x.vencidas,'Visitas':x.visitas,'Servidores activos':x.servidores,'Servidores con actividad':x.servidoresConActividad});
+ const fila=x=>({'Nombre':x.nombre,'Cumplimiento %':x.cumplimiento??'','Exigibles':x.exigibles,'Semáforo':SEMAFORO(x.cumplimiento).t,'Actividades':x.actividades,'Con evidencia':x.conEvidencia,'Validadas':x.validadas,'Por validar':x.porValidar,'Rechazadas':x.rechazadas,'Pendientes':x.pendientes,'Vencidas':x.vencidas,'Evidencias confiables':x.evConfiables||0,'Evidencias por revisar':x.evRevisar||0,'Evidencias sospechosas':x.evSospechosas||0,'Visitas':x.visitas,'Servidores activos':x.servidores,'Servidores con actividad':x.servidoresConActividad});
  const t=r.total,hojas={
-  'Resumen':[['Alcance',r.alcance.nombre],['Periodo',periodoTxt(r)],['Generado',r.generado+' por '+r.generadoPor],['Cumplimiento % (sobre exigibles)',t.cumplimiento??''],['Actividades programadas',t.actividades],['Exigibles (ya debían hacerse)',t.exigibles],['Con evidencia',t.conEvidencia],['Validadas',t.validadas],['Por validar',t.porValidar],['Rechazadas',t.rechazadas],['Pendientes',t.pendientes],['Vencidas',t.vencidas],['Personas visitadas',t.visitas],['Servidores activos',t.servidores],['Servidores con actividad',t.servidoresConActividad]].map(([a,b])=>({'Indicador':a,'Valor':b}))};
+  'Resumen':[['Alcance',r.alcance.nombre],['Periodo',periodoTxt(r)],['Generado',r.generado+' por '+r.generadoPor],['Cumplimiento % (sobre exigibles)',t.cumplimiento??''],['Actividades programadas',t.actividades],['Exigibles (ya debían hacerse)',t.exigibles],['Con evidencia',t.conEvidencia],['Validadas',t.validadas],['Por validar',t.porValidar],['Rechazadas',t.rechazadas],['Pendientes',t.pendientes],['Vencidas',t.vencidas],['Evidencias confiables',t.evConfiables||0],['Evidencias por revisar',t.evRevisar||0],['Evidencias sospechosas',t.evSospechosas||0],['Personas visitadas',t.visitas],['Servidores activos',t.servidores],['Servidores con actividad',t.servidoresConActividad]].map(([a,b])=>({'Indicador':a,'Valor':b}))};
  if(r.alcance.tipo==='estado') hojas['Por región']=r.regiones.map(fila);
  if(r.alcance.tipo!=='zona') hojas['Por municipio']=r.zonas.map(x=>({'Región':x.region,...fila(x)}));
  hojas['Por servidor']=r.personas.map(x=>({'Rol':ROL[x.rol]||'','Región':x.region,'Zona':x.zona,...fila(x)}));
@@ -132,7 +135,7 @@ function excelReporte(r){
 }
 function textoWhatsApp(r){
  const t=r.total,est=r.alcance.tipo==='estado',hijos=(est?r.regiones:r.alcance.tipo==='region'?r.zonas:r.personas).filter(x=>x.cumplimiento!=null).sort((a,b)=>b.cumplimiento-a.cumplimiento);
- const l=[`*${NOMBRE} · Reporte de avance*`,`📍 ${r.alcance.nombre}`,`🗓️ ${periodoTxt(r)}`,'',`✅ Cumplimiento: *${pctTxt(t.cumplimiento)}* (${num(t.conEvidencia)} de ${num(t.exigibles)} que ya debían hacerse)`,`📋 Programadas: ${num(t.actividades)} · por vencer: ${num(t.pendientes)}`,`✔️ Validadas: ${num(t.validadas)} · ⏳ Por validar: ${num(t.porValidar)}`,`⚠️ Vencidas: ${num(t.vencidas)}`,`🏠 Personas visitadas: ${num(t.visitas)}`,`👥 Servidores con actividad: ${num(t.servidoresConActividad)} de ${num(t.servidores)}`];
+ const l=[`*${NOMBRE} · Reporte de avance*`,`📍 ${r.alcance.nombre}`,`🗓️ ${periodoTxt(r)}`,'',`✅ Cumplimiento: *${pctTxt(t.cumplimiento)}* (${num(t.conEvidencia)} de ${num(t.exigibles)} que ya debían hacerse)`,`📋 Programadas: ${num(t.actividades)} · por vencer: ${num(t.pendientes)}`,`✔️ Validadas: ${num(t.validadas)} · ⏳ Por validar: ${num(t.porValidar)}`,`⚠️ Vencidas: ${num(t.vencidas)}`,`🔍 Evidencias sospechosas: ${num(t.evSospechosas||0)} (confiables: ${num(t.evConfiables||0)})`,`🏠 Personas visitadas: ${num(t.visitas)}`,`👥 Servidores con actividad: ${num(t.servidoresConActividad)} de ${num(t.servidores)}`];
  if(hijos.length){l.push('',`*Por ${nivelHijo(r.alcance.tipo)}:*`);hijos.slice(0,est?6:10).forEach((x,i)=>l.push(`${i+1}. ${x.nombre}: ${x.cumplimiento}% ${x.cumplimiento>=80?'🟢':x.cumplimiento>=50?'🟡':'🔴'}`))}
  return l.join('\n');
 }

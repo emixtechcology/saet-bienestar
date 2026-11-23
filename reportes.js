@@ -7,31 +7,37 @@ function rangoPeriodo(R){
  const P={semana:[l,mas(l,6)],semanaPasada:[mas(l,-7),mas(l,-1)],mes:[m0,new Date(h.getFullYear(),h.getMonth()+1,0)],mesPasado:[new Date(h.getFullYear(),h.getMonth()-1,1),new Date(h.getFullYear(),h.getMonth(),0)]};
  if(P[R.per]){R.desde=iso(P[R.per][0]);R.hasta=iso(P[R.per][1])}
 }
-const PERIODOS=[['semana','Esta semana'],['semanaPasada','Semana pasada'],['mes','Este mes'],['mesPasado','Mes pasado'],['otro','Personalizado']];
-function vReportes(){
- const u=S.user,R=S.rep=S.rep||{per:'semana',sel:'',paquete:false,datos:null,ia:''};rangoPeriodo(R);
- const zonas=S.zonas.filter(z=>u.rol==='admin'||(u.rol==='regional'&&z.region===u.region)),regiones=[...new Set(zonas.map(z=>z.region))];
+const PERIODOS=[['semana','Esta semana'],['semanaPasada','Semana pasada'],['mes','Este mes'],['mesPasado','Mes pasado'],['otro','Otras fechas']];
+/* Filtros compartidos por Reportes y Supervisión */
+function bloquePeriodo(R,redibujar){
+ return`<div class="pf-bloque"><span class="pf-et">Periodo</span><div class="seg">${PERIODOS.map(([k,t])=>`<button class="${R.per===k?'on':''}" onclick="S.${redibujar==='vSupervision'?'sup':'rep'}.per='${k}';${redibujar}()">${t}</button>`).join('')}</div>
+ ${R.per==='otro'?`<div class="pf-rango"><input type="date" value="${R.desde}" aria-label="Desde" onchange="S.${redibujar==='vSupervision'?'sup':'rep'}.desde=this.value"><span>al</span><input type="date" value="${R.hasta}" aria-label="Hasta" onchange="S.${redibujar==='vSupervision'?'sup':'rep'}.hasta=this.value"></div>`
+  :`<div class="pf-texto">${ic('agenda')} ${periodoTxt(R)}</div>`}</div>`}
+function selectorAlcance(R,onchange){
+ const u=S.user,zonas=S.zonas.filter(z=>u.rol==='admin'||(u.rol==='regional'&&z.region===u.region)),regiones=[...new Set(zonas.map(z=>z.region))];
  const opt=(v,t)=>`<option value="${esc(v)}" ${R.sel===v?'selected':''}>${esc(t)}</option>`;
- const alcance=u.rol==='encargado'?`<div class="fijo">${esc(u.zona)}</div>`:`<select id="rSel" onchange="S.rep.sel=this.value;pintarOpciones()">
-  ${u.rol==='admin'?opt('','Todo el estado')+regiones.map(r=>`<optgroup label="${esc(r)}">${opt('r:'+r,'Toda la '+r)}${zonas.filter(z=>z.region===r).map(z=>opt('z:'+z.zona,z.zona)).join('')}</optgroup>`).join('')
-   :opt('','Toda mi región ('+u.region+')')+zonas.map(z=>opt('z:'+z.zona,z.zona)).join('')}</select>`;
- $('#vista').innerHTML=`<div class="card no-print rep-ctl"><h3>${ic('reportes')} Reporte de avance</h3>
-  <div class="chips" role="group" aria-label="Periodo">${PERIODOS.map(([k,t])=>`<button class="chip2 ${R.per===k?'on':''}" onclick="S.rep.per='${k}';vReportes()">${t}</button>`).join('')}</div>
-  <div class="rep-filtros"><div class="campo"><label>Desde</label><input type="date" id="rDe" value="${R.desde}" ${R.per==='otro'?'':'disabled'} onchange="S.rep.desde=this.value"></div>
-   <div class="campo"><label>Hasta</label><input type="date" id="rA" value="${R.hasta}" ${R.per==='otro'?'':'disabled'} onchange="S.rep.hasta=this.value"></div>
-   <div class="campo" style="flex:2"><label>Alcance</label>${alcance}</div></div>
-  <div id="rOpc"></div>
-  <button class="btn" style="margin-top:6px" onclick="generarReporte(this)">${ic('reportes')} Generar reporte</button></div>
- <div id="repDoc">${R.datos?barraAcciones()+docReporte(R.datos,R.ia,R.paqueteHecho):`<div class="card vacio no-print">Elige el periodo y el alcance, y pulsa <b>Generar reporte</b>.<br><span class="sm">Verás el avance por región, municipio y servidor, con semáforo, gráficas y hallazgos. Lo puedes guardar en PDF, Excel o mandarlo por WhatsApp.</span></div>`}</div>
- <details class="card no-print" style="margin-top:18px"><summary class="serif" style="font-size:16px;cursor:pointer">${ic('reportes')} Descargar bases completas en Excel</summary>
+ if(u.rol==='encargado') return`<div class="fijo">${ic('visitas')} ${esc(u.zona)}</div>`;
+ return`<select onchange="${onchange}">${u.rol==='admin'?opt('','Todo el estado')+regiones.map(r=>`<optgroup label="${esc(r)}">${opt('r:'+r,'Toda la '+r)}${zonas.filter(z=>z.region===r).map(z=>opt('z:'+z.zona,z.zona)).join('')}</optgroup>`).join('')
+  :opt('','Toda mi región ('+u.region+')')+zonas.map(z=>opt('z:'+z.zona,z.zona)).join('')}</select>`}
+const paramsAlcance=sel=>({region:String(sel||'').startsWith('r:')?sel.slice(2):'',zona:String(sel||'').startsWith('z:')?sel.slice(2):''});
+function tipoAlcance(R){const u=S.user;return u.rol==='encargado'||R.sel.startsWith('z:')?'zona':(u.rol==='regional'||R.sel.startsWith('r:'))?'region':'estado'}
+function vReportes(){
+ const u=S.user,R=S.rep=S.rep||{per:'semana',sel:'',paquete:false,datos:null,ia:''};rangoPeriodo(R);const t=tipoAlcance(R);
+ $('#vista').innerHTML=`<div class="card panel-filtros no-print">
+  <div class="pf-cab"><div><h3>Reporte de avance territorial</h3><p class="sm mute">Avance por región, municipio y servidor, con semáforo, verificación de evidencias y hallazgos.</p></div>
+   <button class="btn" onclick="generarReporte(this)">${ic('reportes')} Generar reporte</button></div>
+  <div class="pf-grid">${bloquePeriodo(R,'vReportes')}
+   <div class="pf-bloque"><span class="pf-et">Alcance</span>${selectorAlcance(R,"S.rep.sel=this.value;vReportes()")}</div>
+   <div class="pf-bloque"><span class="pf-et">Opciones</span>${t==='zona'?'<p class="sm mute" style="margin:0">El reporte de un municipio incluye la tabla completa de sus servidores.</p>':`<label class="check"><input type="checkbox" ${R.paquete?'checked':''} onchange="S.rep.paquete=this.checked"><span>Agregar una hoja por cada ${t==='estado'?'región':'municipio o distrito'}<small>Paquete listo para imprimir o mandar</small></span></label>`}</div></div></div>
+ <div id="repDoc">${R.datos?barraAcciones()+docReporte(R.datos,R.ia,R.paqueteHecho):`<div class="vacio-rep no-print">
+  <div class="vr-item"><i style="--c:var(--ok)">${ic('reportes')}</i><b>Avance con semáforo</b><span>Por región, municipio y servidor, contando solo lo que ya debía hacerse.</span></div>
+  <div class="vr-item"><i style="--c:var(--bad)">${ic('evidencias')}</i><b>Evidencias verificadas</b><span>Confiables, por revisar y sospechosas: fotos repetidas, sin datos de cámara o fuera de fecha.</span></div>
+  <div class="vr-item"><i style="--c:var(--oro)">${ic('ia')}</i><b>Listo para entregar</b><span>PDF para el delegado, Excel con todas las tablas o resumen para WhatsApp.</span></div></div>`}</div>
+ <details class="card no-print" style="margin-top:18px"><summary class="serif" style="font-size:15px;cursor:pointer">${ic('reportes')} Descargar bases completas en Excel</summary>
   <p class="mute sm" style="margin:10px 0">Todo el historial de tu alcance${u.rol==='admin'?' (todo el estado)':''}, sin filtros.</p>
-  ${[['Personal','Directorio del personal con CURP, contacto y redes'],['Actividades','Agenda completa con estatus'],['Evidencias','Evidencias con enlaces a fotos y ubicación'],['Visitas','Personas visitadas y resultados'],['Todo','Un solo libro con las cuatro hojas']].map(([t,d])=>`<div class="item"><div class="sp"><div class="t">${t}</div><div class="s">${d}</div></div><button class="btn ${t==='Todo'?'':'sec'} ch" onclick="excel('${t}',this)">Descargar</button></div>`).join('')}</details>`;
- pintarOpciones();
+  ${[['Personal','Directorio del personal con CURP, contacto y redes'],['Actividades','Agenda completa con estatus'],['Evidencias','Evidencias con verificación, enlaces a fotos y ubicación'],['Visitas','Personas visitadas, resultados y ubicación'],['Todo','Un solo libro con las cuatro hojas']].map(([t,d])=>`<div class="item"><div class="sp"><div class="t">${t}</div><div class="s">${d}</div></div><button class="btn ${t==='Todo'?'':'sec'} ch" onclick="excel('${t}',this)">Descargar</button></div>`).join('')}</details>`;
 }
-function pintarOpciones(){const R=S.rep,u=S.user,el=$('#rOpc');if(!el)return;
- const tipo=u.rol==='encargado'||R.sel.startsWith('z:')?'zona':(u.rol==='regional'||R.sel.startsWith('r:'))?'region':'estado';
- el.innerHTML=tipo==='zona'?'':`<label class="check"><input type="checkbox" ${R.paquete?'checked':''} onchange="S.rep.paquete=this.checked"> Agregar una hoja por cada ${tipo==='estado'?'región':'municipio o distrito'} (paquete para imprimir)</label>`}
-function paramsReporte(){const R=S.rep;return{desde:R.desde,hasta:R.hasta,region:R.sel.startsWith('r:')?R.sel.slice(2):'',zona:R.sel.startsWith('z:')?R.sel.slice(2):''}}
+function paramsReporte(){const R=S.rep;return{desde:R.desde,hasta:R.hasta,...paramsAlcance(R.sel)}}
 function generarReporte(b){ocupado(b,async()=>{const R=S.rep;
  if(!R.desde||!R.hasta||R.desde>R.hasta) throw new Error('Revisa las fechas del periodo');
  R.datos=await api('reporte',paramsReporte(),120000);R.ia='';R.paqueteHecho=R.paquete;
@@ -42,7 +48,7 @@ function barraAcciones(){return`<div class="acciones no-print"><button class="bt
 function analizarReporte(b){ocupado(b,async()=>{const R=S.rep;R.ia=(await api('analisisReporte',paramsReporte(),120000)).texto;
  $('#repDoc').innerHTML=barraAcciones()+docReporte(R.datos,R.ia,R.paqueteHecho);toast('Análisis agregado al reporte')})}
 /* Atajo desde Inicio u otras pantallas: abre Reportes con un alcance ya elegido */
-function abrirReporte(sel){S.rep=Object.assign(S.rep||{per:'semana',paquete:false,datos:null,ia:''},{sel:sel||'',datos:null,ia:''});ir('reportes');setTimeout(()=>{const b=document.querySelector('.rep-ctl .btn:last-child');if(b)generarReporte(b)},50)}
+function abrirReporte(sel){S.rep=Object.assign(S.rep||{per:'semana',paquete:false,datos:null,ia:''},{sel:sel||'',datos:null,ia:''});ir('reportes');setTimeout(()=>{const b=document.querySelector('.panel-filtros .pf-cab .btn');if(b)generarReporte(b)},50)}
 
 /* Generador propio de archivos .xlsx (sin librerías externas) */
 function zipSinComprimir(archivos){

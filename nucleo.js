@@ -29,6 +29,7 @@ const P = {
  personal:'<circle cx="9" cy="8" r="3.500"/><path d="M2.500 20c.6-3.600 3.200-5.500 6.500-5.500s5.900 1.900 6.500 5.500M16 4.800a3.500 3.500 0 010 6.400M18 14.800c2 .7 3.200 2.400 3.600 5.200"/>',
  monitores:'<path d="M2 12s3.600-7 10-7 10 7 10 7-3.600 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/>',
  reportes:'<path d="M12 3v12m0 0l-4.500-4.500M12 15l4.500-4.500M4 19h16"/>',
+ supervision:'<circle cx="11" cy="11" r="6.500"/><path d="M20 20l-4.300-4.300M8.500 11l1.800 1.800 3.400-3.600"/>',
  ia:'<path d="M12 3l1.800 5.200L19 10l-5.200 1.800L12 17l-1.800-5.200L5 10l5.200-1.800zM19 16l.8 2.200L22 19l-2.200.8L19 22l-.8-2.200L16 19l2.200-.8z"/>',
  perfil:'<circle cx="12" cy="8" r="4"/><path d="M4 21c.8-4 4-6 8-6s7.200 2 8 6"/>',
  salir:'<path d="M15 4h3a2 2 0 012 2v12a2 2 0 01-2 2h-3M10 16l-4-4 4-4M6 12h10"/>',
@@ -129,11 +130,11 @@ function menu(){
   m.push(['agenda','Agenda'],['evidencias','Evidencias'],['visitas','Visitas'],['personal','Personal']);
  } else m.push(['tareas','Mis actividades'],['visitas','Mis visitas']);
  if(r==='admin') m.push(['monitores','Monitores']);
- if(jefe()) m.push(['reportes','Reportes']);
+ if(jefe()) m.push(['supervision','Supervisión'],['reportes','Reportes']);
  m.push(['perfil','Mi perfil']);
  return m;
 }
-const TITULOS={inicio:'Inicio',agenda:'Agenda semanal',tareas:'Mis actividades',evidencias:'Evidencias',visitas:'Visitas',personal:'Personal',monitores:'Monitores',reportes:'Reportes de avance',perfil:'Mi perfil'};
+const TITULOS={inicio:'Inicio',agenda:'Agenda semanal',tareas:'Mis actividades',evidencias:'Evidencias',visitas:'Visitas',personal:'Personal',monitores:'Monitores',reportes:'Reportes de avance',supervision:'Supervisión',perfil:'Mi perfil'};
 function ir(v){S.vista=v;S.f={};pintar();window.scrollTo(0,0)}
 function pintar(){
  const pend={personal:S.personal.filter(p=>p.estatus==='Pendiente').length,evidencias:S.evs.filter(e=>e.validacion==='Por validar').length,
@@ -145,7 +146,7 @@ function pintar(){
  <main class="main"><div class="top"><button id="btnMenu" onclick="cajon(1)" aria-label="Menú">${ic('menu')}</button><h1>${TITULOS[S.vista]}</h1><span id="colaInd" class="badge b-Pendiente ${miCola().length?'':'hide'}">${miCola().length} por enviar</span>
   <button class="yo" onclick="ir('perfil')">${avatar(S.user)}<div style="text-align:left"><b>${esc(S.user.nombre.split(' ').slice(0,2).join(' '))}</b><small>${ROL[S.user.rol]}${S.user.zona?' · '+esc(S.user.zona):S.user.region?' · '+esc(S.user.region):''}</small></div></button></div>
   <div id="vista"></div></main></div>`;
- ({inicio:vInicio,agenda:vAgenda,tareas:vTareas,evidencias:vEvidencias,visitas:vVisitas,personal:vPersonal,monitores:vMonitores,reportes:vReportes,perfil:vPerfil})[S.vista]();
+ ({inicio:vInicio,agenda:vAgenda,tareas:vTareas,evidencias:vEvidencias,visitas:vVisitas,personal:vPersonal,monitores:vMonitores,reportes:vReportes,supervision:vSupervision,perfil:vPerfil})[S.vista]();
 }
 function cajon(a){$('#side').classList.toggle('abierto',!!a);$('#velo').classList.toggle('abierto',!!a)}
 const dias7=()=>[0,1,2,3,4,5,6].map(i=>mas(S.semana,i));

@@ -21,7 +21,7 @@ function formaLogin(){
 function entrar(b){ocupado(b,async()=>{const d=await api('login',{usuario:val('lu'),pin:val('lp'),...rangoDe(lunes(new Date()))});iniciar(d.token,d.datos)})}
 async function entrarDemo(rol){S.user=DB.personal.find(p=>p.rol===rol&&p.estatus==='Activo');iniciar('demo',await api('datos',rangoDe(lunes(new Date()))))}
 function guardarToken(t){S.token=t;try{localStorage.setItem('ceiba_t',t)}catch(e){}}
-function iniciar(token,d){guardarToken(token);S.semana=lunes(new Date());S.rango=rangoDe(S.semana);aplicar(d);S.vista='inicio';S.f={};pintar();procesarCola()}
+function iniciar(token,d){guardarToken(token);S.sup=null;S.rep=null;S.ficha=null;S.avIni=null;S.semana=lunes(new Date());S.rango=rangoDe(S.semana);aplicar(d);S.vista='inicio';S.f={};pintar();procesarCola()}
 function salir(){S.token=null;S.user=null;try{localStorage.removeItem('ceiba_t');localStorage.removeItem('ceiba_c')}catch(e){}cerrar();pantallaAcceso()}
 
 async function formaRegistro(){

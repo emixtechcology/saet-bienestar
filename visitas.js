@@ -31,6 +31,7 @@ function listaVisitas(actId){
 /* Formulario de una visita (nueva o corrección). "desde" = actividad desde la que se abrió, para volver a su lista */
 function formaVisita(id,desde,previa){
  const v=id?S.vis.find(x=>x.id===id):null,p=v||previa||{},actId=v?v.actividadId:(desde||p.actividadId||'');
+ if(!id&&navigator.geolocation) navigator.geolocation.getCurrentPosition(g=>{S.geoVis={lat:String(g.coords.latitude),lng:String(g.coords.longitude),t:Date.now()}},()=>{},{enableHighAccuracy:true,timeout:9000,maximumAge:120000});
  const mias=S.acts.filter(a=>a.asignadoA===S.user.id&&a.estatus!=='Validada').sort((a,b)=>(esVisita(b)-esVisita(a))||b.fecha.localeCompare(a.fecha));
  const c=(k,et,extra='')=>`<div class="campo"><label for="v_${k}">${et}</label><input id="v_${k}" value="${esc(v?v[k]:'')}" ${extra}></div>`;
  S.vf={id:v?v.id:'',desde:desde||''};
@@ -53,6 +54,7 @@ function guardarVisita(b,otra){ocupado(b,async()=>{
  const d={id:S.vf.id||idNuevo('V'),actividadId:val('v_act'),resultado:(document.querySelector('[name=v_res]:checked')||{}).value||''};
  ['nombre','telefono','curp','localidad','domicilio','programa','motivo','observaciones'].forEach(k=>d[k]=val('v_'+k));
  if(!d.nombre) throw new Error('Escribe el nombre de la persona visitada');
+ if(!S.vis.some(x=>x.id===d.id)&&S.geoVis&&Date.now()-S.geoVis.t<600000){d.lat=S.geoVis.lat;d.lng=S.geoVis.lng}   // dónde se registró (solo al crearla)
  await encolar('guardarVisita',d);
  const n=d.actividadId?visitasDe(d.actividadId).length:0;
  toast((S.vf.id?'Visita corregida':'Visita guardada')+(n?` · llevas ${n} en esta actividad`:''));
