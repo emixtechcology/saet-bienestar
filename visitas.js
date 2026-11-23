@@ -41,7 +41,7 @@ function formaVisita(id,desde,previa){
  <div class="paso"><i>2</i>¿Dónde?</div>
  <div class="dos"><div class="campo"><label for="v_localidad">Localidad o colonia</label><input id="v_localidad" value="${esc(p.localidad||'')}"></div>${c('domicilio','Domicilio')}</div>
  <div class="paso"><i>3</i>¿Sobre qué programa?</div>
- <div class="dos"><div class="campo"><label for="v_programa">Programa</label><select id="v_programa">${PROGRAMAS.map(x=>`<option ${p.programa===x?'selected':''}>${x}</option>`).join('')}</select></div><div class="campo"><label for="v_motivo">Motivo de la visita</label><input id="v_motivo" value="${esc(p.motivo||'')}"></div></div>
+ <div class="dos"><div class="campo"><label for="v_programa">Programa</label>${selectConOtra('v_programa',PROGRAMAS,p.programa||'','¿Qué programa?','Escribe el nombre del programa')}</div><div class="campo"><label for="v_motivo">Motivo de la visita</label><input id="v_motivo" value="${esc(p.motivo||'')}"></div></div>
  <div class="paso"><i>4</i>¿Cómo te fue?</div>
  <div class="opc" style="margin-bottom:12px">${RESULTADOS.map((x,i)=>`<label><input type="radio" name="v_res" value="${x}" ${(v?v.resultado===x:i===0)?'checked':''}><span>${x}</span></label>`).join('')}</div>
  ${c('observaciones','Observaciones')}
@@ -52,7 +52,8 @@ function formaVisita(id,desde,previa){
 }
 function guardarVisita(b,otra){ocupado(b,async()=>{
  const d={id:S.vf.id||idNuevo('V'),actividadId:val('v_act'),resultado:(document.querySelector('[name=v_res]:checked')||{}).value||''};
- ['nombre','telefono','curp','localidad','domicilio','programa','motivo','observaciones'].forEach(k=>d[k]=val('v_'+k));
+ ['nombre','telefono','curp','localidad','domicilio','motivo','observaciones'].forEach(k=>d[k]=val('v_'+k));
+ d.programa=valOtra('v_programa','Escribe qué programa es');
  if(!d.nombre) throw new Error('Escribe el nombre de la persona visitada');
  if(!S.vis.some(x=>x.id===d.id)&&S.geoVis&&Date.now()-S.geoVis.t<600000){d.lat=S.geoVis.lat;d.lng=S.geoVis.lng}   // dónde se registró (solo al crearla)
  await encolar('guardarVisita',d);

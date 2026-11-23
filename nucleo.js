@@ -41,6 +41,13 @@ const P = {
 const ic = n=>`<svg class="ic" viewBox="0 0 24 24">${P[n]||''}</svg>`;
 const CEIBA = '<path d="M32 60V31M32 36c0-9-9-8-16-15M32 33c-1-8-5-12-8-19M32 32V11M32 33c1-8 5-12 8-19M32 36c0-9 9-8 16-15"/><circle cx="16" cy="21" r="3"/><circle cx="24" cy="13.500" r="3"/><circle cx="32" cy="10.500" r="3"/><circle cx="40" cy="13.500" r="3"/><circle cx="48" cy="21" r="3"/>';
 
+/* Lista con opción "Otra/Otro": al elegirla se abre un cuadro para escribir cuál */
+const esOtra=v=>/^otr[ao]$/i.test(String(v||'').trim());
+function selectConOtra(id,opciones,actual,pregunta,ejemplo){
+ const otra=opciones.find(esOtra)||'Otra',libre=actual&&!opciones.includes(actual);
+ return`<select id="${id}" onchange="const c=document.getElementById('${id}_c');c.classList.toggle('hide',!esOtra(this.value));if(esOtra(this.value))document.getElementById('${id}_o').focus()">${opciones.map(x=>`<option ${(libre?x===otra:x===actual)?'selected':''}>${esc(x)}</option>`).join('')}</select>
+ <div id="${id}_c" class="otra-caja ${libre||esOtra(actual)?'':'hide'}"><label for="${id}_o">${esc(pregunta)} *</label><input id="${id}_o" maxlength="60" value="${libre?esc(actual):''}" placeholder="${esc(ejemplo||'')}"></div>`}
+function valOtra(id,mensaje){const v=val(id);if(!esOtra(v))return v;const o=val(id+'_o');if(!o)throw new Error(mensaje);return o.charAt(0).toUpperCase()+o.slice(1)}
 function toast(m){const t=$('#toast');t.textContent=m;t.classList.remove('hide');clearTimeout(toast.t);toast.t=setTimeout(()=>t.classList.add('hide'),3800)}
 function ampliar(src){$('#luz img').src=src;$('#luz').classList.remove('hide')}
 function modal(html,ancho){$('#modal').innerHTML=`<div class="caja" style="max-width:${ancho||560}px"><button class="cerrar" onclick="cerrar()" aria-label="Cerrar">${ic('x')}</button>${html}</div>`;$('#modal').classList.remove('hide')}

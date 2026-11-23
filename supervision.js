@@ -5,11 +5,11 @@
 
 const FILTROS_SUP=[['','Todos'],['sinEvidencia','Sin evidencia'],['sospechosas','Con evidencias sospechosas'],['rezago','Rezago (menos de 50%)'],['sinActividad','Sin actividades']];
 function vSupervision(){
- const R=S.sup=S.sup||{per:'semana',sel:'',q:'',filtro:'',vista:'tabla',datos:null,clave:''};rangoPeriodo(R);
+ const R=S.sup=S.sup||{per:'semana',sel:'',q:'',filtro:'',rol:'',agrupar:'',vista:'tabla',datos:null,clave:''};rangoPeriodo(R);
  $('#vista').innerHTML=`<div class="card panel-filtros">
   <div class="pf-cab"><div><h3>Supervisión del trabajo</h3><p class="sm mute">Avance de cada persona contra lo que tiene asignado, calidad de sus evidencias y dónde hizo sus visitas.</p></div>
   <button class="btn" onclick="cargarSupervision(this,true)">${ic('monitores')} Actualizar</button></div>
-  <div class="pf-grid">${bloquePeriodo(R,'vSupervision')}<div class="pf-bloque"><span class="pf-et">Alcance</span>${selectorAlcance(R,"S.sup.sel=this.value;cargarSupervision(null,true)")}</div></div></div>
+  <div class="pf-grid">${bloquePeriodo(R,'vSupervision')}<div class="pf-bloque"><span class="pf-et">Alcance</span>${selectorAlcance(R,"S.sup.sel=this.value;S.sup.agrupar='';cargarSupervision(null,true)")}</div></div></div>
  <div id="supCuerpo"><div class="card vacio"><span class="carga oscura"></span><p style="margin-top:10px">Cargando…</p></div></div>`;
  const clave=JSON.stringify([S.user.id,R.desde,R.hasta,R.sel]);
  if(R.datos&&R.clave===clave) pintarSupervision(); else cargarSupervision(null,false);
@@ -18,35 +18,62 @@ function cargarSupervision(b,forzar){ocupado(b,async()=>{const R=S.sup;
  if(!R.desde||!R.hasta||R.desde>R.hasta) throw new Error('Revisa las fechas del periodo');
  R.datos=await api('supervision',{desde:R.desde,hasta:R.hasta,...paramsAlcance(R.sel)},120000);R.clave=JSON.stringify([S.user.id,R.desde,R.hasta,R.sel]);pintarSupervision()})}
 function filtraSup(p,f){return !f||(f==='sinEvidencia'?p.exigibles>0&&p.conEvidencia===0:f==='sospechosas'?p.evSospechosas>0:f==='rezago'?p.avance!=null&&p.avance<50:f==='sinActividad'?p.asignadas===0:true)}
+/* Niveles de vista según el rol y el alcance elegido */
+function nivelesSup(R){const u=S.user,t=tipoAlcance(R);return t==='estado'?[['region','Por región'],['zona','Por municipio'],['persona','Por persona']]:t==='region'?[['zona','Por municipio'],['persona','Por persona']]:[['persona','Por persona']]}
+function agruparSup(personas,clave){
+ const g={},sumar=['asignadas','exigibles','conEvidencia','vencidas','evConfiables','evRevisar','evSospechosas','duplicadas','visitas'];
+ personas.forEach(p=>{const k=(clave==='region'?p.region:p.zona)||'Monitores',x=g[k]=g[k]||{nombre:k,region:p.region,personas:0,conActividad:0,sinEvidencia:0,locs:new Set()};
+  x.personas++;if(p.asignadas)x.conActividad++;if(p.exigibles>0&&p.conEvidencia===0)x.sinEvidencia++;sumar.forEach(f=>x[f]=(x[f]||0)+(p[f]||0));p.localidades.forEach(l=>x.locs.add(l))});
+ return Object.values(g).map(x=>{x.avance=x.exigibles?Math.round(x.conEvidencia/x.exigibles*100):null;x.localidades=x.locs.size;
+  const resp=S.personal.find(q=>clave==='region'?q.rol==='regional'&&q.region===x.nombre:q.rol==='encargado'&&q.zona===x.nombre);x.responsable=resp?resp.nombre:'';return x});
+}
+function entrarGrupo(nombre){const R=S.sup;if(nombre==='Monitores')return;
+ if(R.agrupar==='region'){R.sel='r:'+nombre;R.agrupar='zona'}else{R.sel='z:'+nombre;R.agrupar='persona'}
+ vSupervision()}
 function pintarSupervision(){
  const R=S.sup,d=R.datos,el=$('#supCuerpo');if(!el||!d)return;
- const todas=d.personas,q=(R.q||'').toLowerCase();
- const l=todas.filter(p=>filtraSup(p,R.filtro)&&(!q||(p.nombre+' '+p.zona).toLowerCase().includes(q)))
+ const niveles=nivelesSup(R);if(!niveles.some(n=>n[0]===R.agrupar))R.agrupar=niveles[0][0];
+ const q=(R.q||'').toLowerCase(),todas=d.personas.filter(p=>!R.rol||p.rol===R.rol);
+ const l=todas.filter(p=>filtraSup(p,R.filtro)&&(!q||(p.nombre+' '+p.zona+' '+p.region).toLowerCase().includes(q)))
   .sort((a,b)=>R.orden==='nombre'?a.nombre.localeCompare(b.nombre):R.orden==='sospechosas'?b.evSospechosas-a.evSospechosas:((a.avance??101)-(b.avance??101))||b.vencidas-a.vencidas);
  const s=k=>todas.reduce((t,p)=>t+(p[k]||0),0),ex=s('exigibles'),av=ex?Math.round(s('conEvidencia')/ex*100):null;
- const cont=f=>todas.filter(p=>filtraSup(p,f)).length;
- el.innerHTML=`<div class="tiles2">
+ const cont=f=>todas.filter(p=>filtraSup(p,f)).length,u=S.user;
+ const roles=[['','Todos los roles'],['servidor','Servidores de la Nación'],['encargado','Encargados'],...(u.rol==='admin'?[['monitor','Monitores']]:[])];
+ const grupos=R.agrupar==='persona'?null:agruparSup(l,R.agrupar).sort((a,b)=>R.orden==='nombre'?a.nombre.localeCompare(b.nombre):R.orden==='sospechosas'?b.evSospechosas-a.evSospechosas:(a.avance??101)-(b.avance??101)).sort((a,b)=>(a.nombre==='Monitores')-(b.nombre==='Monitores'));
+ const migas=R.sel?`<div class="migas"><button onclick="S.sup.sel='';S.sup.agrupar='';vSupervision()">${u.rol==='admin'?'Todo el estado':'Toda mi región'}</button>${R.sel.startsWith('z:')&&u.rol==='admin'?`<span>›</span><button onclick="S.sup.sel='r:${esc((S.zonas.find(z=>'z:'+z.zona===R.sel)||{}).region||'')}';S.sup.agrupar='zona';vSupervision()">${esc((S.zonas.find(z=>'z:'+z.zona===R.sel)||{}).region||'')}</button>`:''}<span>›</span><b>${esc(R.sel.slice(2))}</b></div>`:'';
+ el.innerHTML=`${migas}<div class="tiles2">
   <div class="tile2"><b>${todas.length}</b><span>Personas</span></div>
   <div class="tile2" style="--c:${SEMAFORO(av).c}"><b>${pctTxt(av)}</b><span>Avance promedio</span></div>
   <div class="tile2" style="--c:var(--bad)"><b>${cont('sinEvidencia')}</b><span>Sin ninguna evidencia</span></div>
   <div class="tile2" style="--c:var(--bad)"><b>${s('evSospechosas')}</b><span>Evidencias sospechosas</span></div>
   <div class="tile2" style="--c:var(--bad)"><b>${s('duplicadas')}</b><span>Fotos repetidas</span></div>
   <div class="tile2"><b>${num(s('visitas'))}</b><span>Visitas</span></div></div>
- <div class="filtros"><div class="seg">${FILTROS_SUP.map(([k,t])=>`<button class="${R.filtro===k?'on':''}" onclick="S.sup.filtro='${k}';pintarSupervision()">${t}${k?` <small>${cont(k)}</small>`:''}</button>`).join('')}</div>
-  <span class="sp"></span><input placeholder="Buscar persona o zona…" value="${esc(R.q||'')}" oninput="S.sup.q=this.value;clearTimeout(S.tq);S.tq=setTimeout(pintarSupervision,250)">
-  <select onchange="S.sup.orden=this.value;pintarSupervision()"><option value="">Menor avance primero</option><option value="sospechosas" ${R.orden==='sospechosas'?'selected':''}>Más sospechosas primero</option><option value="nombre" ${R.orden==='nombre'?'selected':''}>Por nombre</option></select>
+ <div class="filtros barra-ver">${niveles.length>1?`<div class="ver-por"><span class="pf-et">Ver</span><div class="seg">${niveles.map(([k,t])=>`<button class="${R.agrupar===k?'on':''}" onclick="S.sup.agrupar='${k}';pintarSupervision()">${t}</button>`).join('')}</div></div>`:''}
+  <select onchange="S.sup.rol=this.value;pintarSupervision()" aria-label="Rol">${roles.map(([k,t])=>`<option value="${k}" ${R.rol===k?'selected':''}>${t}</option>`).join('')}</select>
+  <span class="sp"></span><input placeholder="Buscar persona, municipio o región…" value="${esc(R.q||'')}" oninput="S.sup.q=this.value;clearTimeout(S.tq);S.tq=setTimeout(pintarSupervision,250)">
+  <select onchange="S.sup.orden=this.value;pintarSupervision()" aria-label="Orden"><option value="">Menor avance primero</option><option value="sospechosas" ${R.orden==='sospechosas'?'selected':''}>Más sospechosas primero</option><option value="nombre" ${R.orden==='nombre'?'selected':''}>Por nombre</option></select>
   <div class="seg"><button class="${R.vista!=='mapa'?'on':''}" onclick="S.sup.vista='tabla';pintarSupervision()">Tabla</button><button class="${R.vista==='mapa'?'on':''}" onclick="S.sup.vista='mapa';pintarSupervision()">${ic('visitas')} Mapa</button></div></div>
+ <div class="filtros"><div class="seg">${FILTROS_SUP.map(([k,t])=>`<button class="${R.filtro===k?'on':''}" onclick="S.sup.filtro='${k}';pintarSupervision()">${t}${k?` <small>${cont(k)}</small>`:''}</button>`).join('')}</div></div>
  ${R.vista==='mapa'?`<div class="card"><div class="leyenda-mapa">${leyendaMapa()}</div><div id="mapaSup" class="mapa"></div><p class="sm mute" style="margin-top:8px">${d.puntos.length} puntos con ubicación en el periodo. Toca un punto para ver el detalle.</p></div>`
- :`<p class="sm mute" style="margin:0 0 8px 4px">${l.length} personas · toca una para ver su ficha completa: actividades, evidencias, visitas y mapa.</p><div class="card tabla"><table class="tr sup"><tr><th>Persona</th><th>Zona</th><th>Asignadas</th><th style="min-width:170px">Avance</th><th>Evidencias<br><small>✓ ◆ ▲</small></th><th>Repetidas</th><th>Visitas</th><th>Localidades</th><th>Última evidencia</th></tr>
+ :grupos?tablaGrupos(grupos,R.agrupar):tablaPersonasSup(l)}`;
+ if(R.vista==='mapa') pintarMapa('mapaSup',d.puntos.filter(p=>!R.rol||(d.personas.find(x=>x.id===p.personaId)||{}).rol===R.rol)).catch(e=>{const m=$('#mapaSup');if(m)m.innerHTML=`<div class="vacio">${esc(e.message)}</div>`});
+}
+function tablaGrupos(g,clave){const reg=clave==='region';
+ return`<p class="sm mute" style="margin:0 0 8px 4px">${g.length} ${reg?'regiones':'municipios y distritos'} · toca uno para ver ${reg?'sus municipios':'a su gente'}.</p><div class="card tabla"><table class="tr sup"><tr><th>${reg?'Región':'Municipio / distrito'}</th><th>Personas<br><small>con act. / total</small></th><th style="min-width:170px">Avance</th><th>Sin evidencia</th><th>Vencidas</th><th>Evidencias<br><small>✓ ◆ ▲</small></th><th>Repetidas</th><th>Visitas</th><th>Localidades</th></tr>
+ ${g.map(x=>`<tr ${x.nombre==='Monitores'?'':`class="clic" title="Ver detalle" onclick="entrarGrupo('${esc(x.nombre)}')"`}><td class="persona-c"><b>${esc(x.nombre)}</b><div class="sm mute">${x.responsable?(reg?'Regional: ':'Encargado: ')+esc(x.responsable):reg?'':esc(x.region||'')}</div></td>
+  <td>${num(x.conActividad)} / ${num(x.personas)}</td><td>${x.asignadas?semaforoChip(x.avance)+`<div class="sm mute">${x.conEvidencia} de ${x.exigibles} exigibles</div>`:'<span class="sm mute">Sin actividades</span>'}</td>
+  <td>${x.sinEvidencia?`<b style="color:var(--bad)">${x.sinEvidencia}</b>`:0}</td><td>${x.vencidas?`<b style="color:var(--bad)">${x.vencidas}</b>`:0}</td>
+  <td class="nowrap"><span class="vn ok">✓${x.evConfiables}</span> <span class="vn warn">◆${x.evRevisar}</span> <span class="vn bad">▲${x.evSospechosas}</span></td>
+  <td>${x.duplicadas?`<b style="color:var(--bad)">${x.duplicadas}</b>`:0}</td><td>${num(x.visitas)}</td><td>${num(x.localidades)}</td></tr>`).join('')||'<tr><td colspan="9" class="vacio">Sin datos con este filtro.</td></tr>'}</table></div>`}
+function tablaPersonasSup(l){
+ return`<p class="sm mute" style="margin:0 0 8px 4px">${l.length} personas · toca una para ver su ficha completa: actividades, evidencias, visitas y mapa.</p><div class="card tabla"><table class="tr sup"><tr><th>Persona</th><th>Zona</th><th>Asignadas</th><th style="min-width:170px">Avance</th><th>Evidencias<br><small>✓ ◆ ▲</small></th><th>Repetidas</th><th>Visitas</th><th>Localidades</th><th>Última evidencia</th></tr>
  ${l.map(p=>`<tr class="clic" title="Ver ficha completa" onclick="verFicha('${p.id}')"><td class="persona-c"><div class="fila">${avatar(p)}<div><b>${esc(p.nombre)}</b><div class="sm mute">${ROL[p.rol]||''}</div></div></div></td>
   <td class="sm">${esc(p.zona||'—')}</td><td>${num(p.asignadas)}${p.vencidas?`<div class="sm" style="color:var(--bad)">${p.vencidas} vencidas</div>`:''}</td>
   <td>${p.asignadas?semaforoChip(p.avance)+`<div class="sm mute">${p.conEvidencia} de ${p.exigibles} exigibles</div>`:'<span class="sm mute">Sin actividades</span>'}</td>
   <td class="nowrap"><span class="vn ok">✓${p.evConfiables}</span> <span class="vn warn">◆${p.evRevisar}</span> <span class="vn bad">▲${p.evSospechosas}</span></td>
   <td>${p.duplicadas?`<b style="color:var(--bad)">${p.duplicadas}</b>`:'0'}</td><td>${num(p.visitas)}</td>
   <td class="sm">${p.localidades.slice(0,2).map(esc).join(', ')||'—'}${p.localidades.length>2?` <span class="mute">+${p.localidades.length-2}</span>`:''}</td>
-  <td class="sm nowrap">${p.ultima?esc(p.ultima.slice(0,10)):'<span style="color:var(--bad)">Nunca</span>'}</td></tr>`).join('')||'<tr><td colspan="9" class="vacio">Nadie coincide con este filtro.</td></tr>'}</table></div>`}`;
- if(R.vista==='mapa') pintarMapa('mapaSup',d.puntos).catch(e=>{const m=$('#mapaSup');if(m)m.innerHTML=`<div class="vacio">${esc(e.message)}</div>`});
-}
+  <td class="sm nowrap">${p.ultima?esc(p.ultima.slice(0,10)):'<span style="color:var(--bad)">Nunca</span>'}</td></tr>`).join('')||'<tr><td colspan="9" class="vacio">Nadie coincide con este filtro.</td></tr>'}</table></div>`}
 
 /* ── Ficha individual ── */
 async function verFicha(id){

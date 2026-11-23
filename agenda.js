@@ -31,11 +31,11 @@ const elegidos=()=>[...document.querySelectorAll('#selL input:checked')].map(i=>
 function nuevaActividad(){
  modal(`<h2>Nueva actividad</h2>
  <div class="campo"><label>Título *</label><input id="aT" placeholder="Ej. Visitas de seguimiento en Villa Aldama"></div>
- <div class="dos"><div class="campo"><label>Tipo</label><select id="aTipo">${TIPOS.map(t=>`<option>${t}</option>`).join('')}</select></div><div class="campo"><label>Lugar</label><input id="aL"></div></div>
+ <div class="dos"><div class="campo"><label for="aTipo">Tipo de actividad</label>${selectConOtra('aTipo',TIPOS,'','¿Qué actividad es?','Ej. Entrega de tarjetas, recorrido con el delegado…')}</div><div class="campo"><label>Lugar</label><input id="aL"></div></div>
  <div class="dos"><div class="campo"><label>Fecha *</label><input id="aF" type="date" value="${hoy()}"></div><div class="campo"><label>Hora</label><input id="aH" type="time"></div></div>
  <div class="campo"><label>Indicaciones</label><textarea id="aD" rows="2"></textarea></div>
  <div class="campo">${selector()}</div>
- <button class="btn" style="width:100%" onclick="guardarActs(this,[{titulo:val('aT'),tipo:val('aTipo'),lugar:val('aL'),fecha:val('aF'),hora:val('aH'),descripcion:val('aD')}])">Guardar actividad</button>`);
+ <button class="btn" style="width:100%" onclick="try{guardarActs(this,[{titulo:val('aT'),tipo:valOtra('aTipo','Escribe qué actividad es'),lugar:val('aL'),fecha:val('aF'),hora:val('aH'),descripcion:val('aD')}])}catch(e){toast(e.message)}">Guardar actividad</button>`);
 }
 function guardarActs(b,lista){ocupado(b,async()=>{
  if(lista.some(x=>!x.titulo||!x.fecha)) throw new Error('Falta el título o la fecha');

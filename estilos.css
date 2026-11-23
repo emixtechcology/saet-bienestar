@@ -305,3 +305,7 @@ button.tile2:hover{transform:translateY(-1px)}.tile2.on{outline:2px solid var(--
 @media(max-width:820px){.pf-bloque .seg{align-self:stretch}.pf-bloque .seg button{flex:0 0 auto}}
 @media(max-width:1000px){.pf-grid{grid-template-columns:1fr 1fr}.pf-grid>.pf-bloque:first-child{grid-column:1/-1}}
 @media(max-width:820px){.pf-grid{grid-template-columns:1fr}}
+.otra-caja{margin-top:10px;padding:12px;border-radius:12px;background:var(--g50);border:1.5px dashed var(--g200);animation:aparece .18s ease}.otra-caja input{background:#fff}
+@keyframes aparece{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:none}}
+.migas{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:0 0 12px 4px;font-size:13px}.migas button{color:var(--g700);font-weight:600;text-decoration:underline;text-underline-offset:3px}.migas span{color:var(--mute)}
+.ver-por{display:flex;align-items:center;gap:10px}.barra-ver{margin-bottom:10px}
