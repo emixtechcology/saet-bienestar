@@ -13,6 +13,9 @@ const lunes = d=>{const x=new Date(d);x.setHours(12,0,0,0);return mas(x,-((x.get
 const hoy = ()=>iso(new Date());
 const fechaTxt = s=>{const d=new Date(s.slice(0,10)+'T12:00');return d.toLocaleDateString('es-MX',{weekday:'short',day:'numeric',month:'short'})};
 const jefe = ()=>['admin','regional','encargado'].includes(S.user.rol);
+/* Nombres de los cargos (la estructura de la Delegación) */
+Object.assign(ROL,{regional:'Director(a) regional',encargado:'Enlace municipal',monitor:'Monitor',servidor:'Servidor de la Nación'});
+const rolTxt=p=>p&&p.rol==='servidor'&&p.puesto==='UBA'?'UBA':ROL[p&&p.rol]||'';
 const estado = a => a.estatus==='Pendiente'&&a.fecha<hoy()?'Vencida':a.estatus;
 const cls = s=>String(s).replace(/\s/g,'');
 const badge = s=>`<span class="badge b-${cls(s)}">${esc(s)}</span>`;
@@ -25,6 +28,7 @@ const P = {
  agenda:'<rect x="3" y="5" width="18" height="16" rx="3"/><path d="M3 10h18M8 3v4M16 3v4"/>',
  tareas:'<path d="M9 11l3 3 8-8"/><path d="M20 12v6a2 2 0 01-2 2H6a2 2 0 01-2-2V6a2 2 0 012-2h9"/>',
  evidencias:'<rect x="3" y="5" width="18" height="15" rx="3"/><circle cx="12" cy="13" r="3.5"/><path d="M8 5l1.5-2h5L16 5"/>',
+ campo:'<circle cx="11" cy="11" r="6.5"/><path d="M16 16l4.5 4.5M8.5 11l1.8 1.8 3.4-3.6"/>',
  visitas:'<path d="M12 21s7-6.2 7-11.5A7 7 0 005 9.500C5 14.800 12 21 12 21z"/><circle cx="12" cy="9.500" r="2.500"/>',
  personal:'<circle cx="9" cy="8" r="3.500"/><path d="M2.500 20c.6-3.600 3.200-5.500 6.500-5.500s5.900 1.900 6.500 5.500M16 4.800a3.500 3.500 0 010 6.400M18 14.800c2 .7 3.200 2.400 3.600 5.200"/>',
  monitores:'<path d="M2 12s3.600-7 10-7 10 7 10 7-3.600 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/>',
@@ -133,7 +137,8 @@ function aplicarCola(){miCola().forEach(x=>{const d=x.datos;
  if(x.accion==='subirEvidencia'){const a=S.acts.find(y=>y.id===d.actividadId);
   if(!a||S.evs.some(e=>e.id===d.id)||!['Pendiente','Rechazada'].includes(a.estatus)) return;
   a.estatus='Con evidencia';marcarEquipo(a,'Con evidencia',['Pendiente','Rechazada']);
-  S.evs.push({id:d.id,actividadId:a.id,usuarioId:S.user.id,usuarioNombre:S.user.nombre,region:a.region,zona:a.zona,fecha:d.cuando,fotos:d.fotos.join(' | '),comentario:d.comentario,lat:d.lat,lng:d.lng,validacion:'Por validar',validadoPor:'',nota:'',ia:''})}
+  S.evs.push({id:d.id,actividadId:a.id,usuarioId:S.user.id,usuarioNombre:S.user.nombre,region:a.region,zona:a.zona,fecha:d.cuando,fotos:d.fotos.join(' | '),comentario:d.comentario,lat:d.lat,lng:d.lng,validacion:'Por validar',validadoPor:'',nota:'',ia:'',
+   detalle:d.detalle?JSON.stringify({...d.detalle,revision:Object.fromEntries(Object.entries(d.detalle.revision||{}).map(([k,v])=>[k,v?'si':'no']))}):''})}
  if(x.accion==='guardarVisita'){const i=S.vis.findIndex(v=>v.id===d.id),a=S.acts.find(y=>y.id===d.actividadId);
   const base=i>-1?S.vis[i]:{evidenciaId:'',servidorId:S.user.id,servidorNombre:S.user.nombre,fecha:hoy()};
   const n={...base,...d,region:a?a.region:S.user.region,zona:a?a.zona:S.user.zona};i>-1?S.vis[i]=n:S.vis.push(n)}
@@ -168,17 +173,18 @@ function menu(){
  const r=S.user.rol,m=[['inicio','Inicio']];
  if(jefe()){
   if(r!=='admin'&&S.acts.some(a=>a.asignadoA===S.user.id)) m.push(['tareas','Mis actividades']);
-  m.push(['agenda','Agenda'],['evidencias','Evidencias'],['visitas','Visitas'],['personal','Personal']);
- } else m.push(['tareas','Mis actividades'],['visitas','Mis visitas']);
+  m.push(['agenda','Agenda'],['evidencias','Evidencias'],['campo','Visitas de supervisión'],['personal','Personal']);
+ } else { m.push(['tareas','Mis actividades']); if(r==='monitor') m.push(['campo','Visitas de supervisión']); }
  if(r==='admin') m.push(['monitores','Monitores']);
  if(jefe()) m.push(['carga','Carga masiva'],['supervision','Supervisión'],['reportes','Reportes']);
  m.push(['perfil','Mi perfil']);
  return m;
 }
-const TITULOS={inicio:'Inicio',agenda:'Agenda semanal',tareas:'Mis actividades',evidencias:'Evidencias',visitas:'Visitas',personal:'Personal',monitores:'Monitores',reportes:'Reportes de avance',supervision:'Supervisión',carga:'Carga masiva de agenda',perfil:'Mi perfil'};
+const TITULOS={inicio:'Inicio',agenda:'Agenda semanal',tareas:'Mis actividades',evidencias:'Evidencias',visitas:'Visitas',campo:'Visitas de supervisión',personal:'Personal',monitores:'Monitores',reportes:'Reportes de avance',supervision:'Supervisión',carga:'Carga masiva de agenda',perfil:'Mi perfil'};
 function ir(v){S.vista=v;S.f={};pintar();window.scrollTo(0,0)}
 function pintar(){
- const pend={personal:S.personal.filter(p=>p.estatus==='Pendiente').length,evidencias:S.evs.filter(e=>e.validacion==='Por validar').length,
+ const pend={personal:S.personal.filter(p=>p.estatus==='Pendiente').length,evidencias:S.evs.filter(e=>e.validacion==='Por validar'&&puedeValidarEv(e,S.acts.find(a=>a.id===e.actividadId))).length,
+  campo:S.acts.filter(a=>esSup(a)&&(()=>{const e=evidenciaDe(a);return e&&e.validacion==='Por validar'&&puedeValidarEv(e,a)})()).length,
   tareas:S.acts.filter(a=>a.asignadoA===S.user.id&&['Pendiente','Rechazada'].includes(a.estatus)).length};
  $('#raiz').innerHTML=`<div id="app"><div id="velo" onclick="cajon(0)"></div>
  <aside class="side" id="side"><div class="marca"><img src="${LOGO}" alt=""><div><b>${NOMBRE}</b><span>${LEMA}</span></div></div>
@@ -187,7 +193,7 @@ function pintar(){
  <main class="main"><div class="top"><button id="btnMenu" onclick="cajon(1)" aria-label="Menú">${ic('menu')}</button><h1>${TITULOS[S.vista]}</h1><span id="colaInd" class="badge b-Pendiente ${miCola().length?'':'hide'}">${miCola().length} por enviar</span>
   <button class="yo" onclick="ir('perfil')">${avatar(S.user)}<div style="text-align:left"><b>${esc(S.user.nombre.split(' ').slice(0,2).join(' '))}</b><small>${ROL[S.user.rol]}${S.user.zona?' · '+esc(S.user.zona):S.user.region?' · '+esc(S.user.region):''}</small></div></button></div>
   <div id="vista"></div></main></div>`;
- ({inicio:vInicio,agenda:vAgenda,tareas:vTareas,evidencias:vEvidencias,visitas:vVisitas,personal:vPersonal,monitores:vMonitores,reportes:vReportes,supervision:vSupervision,carga:vCarga,perfil:vPerfil})[S.vista]();
+ ({inicio:vInicio,agenda:vAgenda,tareas:vTareas,evidencias:vEvidencias,visitas:vVisitas,campo:vCampo,personal:vPersonal,monitores:vMonitores,reportes:vReportes,supervision:vSupervision,carga:vCarga,perfil:vPerfil})[S.vista]();
 }
 function cajon(a){$('#side').classList.toggle('abierto',!!a);$('#velo').classList.toggle('abierto',!!a)}
 const dias7=()=>[0,1,2,3,4,5,6].map(i=>mas(S.semana,i));

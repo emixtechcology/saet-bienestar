@@ -394,3 +394,15 @@ button.tile2:hover{transform:translateY(-1px)}.tile2.on{outline:2px solid var(--
 .badge.b-oro{background:var(--oro2,#F6EBD3);color:#7A5A12}
 #selL label.yo{background:var(--g50);border:1px dashed var(--g200);border-radius:12px;margin-bottom:6px}
 .chip span svg.ic{width:12px;height:12px;vertical-align:-2px}
+/* ── Visitas de supervisión ── */
+.sup-card h4{margin:6px 0 2px}.sup-sv{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
+.chip-sv{font-size:12px;background:var(--g50);border:1px solid var(--g100);border-radius:20px;padding:3px 10px;color:var(--g800)}
+.chip-sv.cal-ok,.cal.cal-ok{background:var(--okb);border-color:transparent;color:var(--ok)}.chip-sv.cal-warn,.cal.cal-warn{background:var(--warnb);border-color:transparent;color:var(--warn)}.chip-sv.cal-bad,.cal.cal-bad{background:var(--badb,#FBE6E4);border-color:transparent;color:var(--bad)}
+.cal{font-size:12px;font-weight:700;border-radius:20px;padding:3px 10px;white-space:nowrap}
+.sup-lista{max-height:300px;overflow:auto}.sup-lista label.on{background:var(--g50);border-radius:10px}
+.sup-cal,.sup-rev{display:grid;gap:8px;margin-bottom:10px}
+.fila-cal{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;background:var(--g50);border-radius:12px;padding:8px 10px}
+.fila-rev{display:flex;align-items:center;gap:10px;border-bottom:1px solid var(--linea);padding:4px 0 8px;font-size:14px}
+.seg-cal button.on.c-ok{background:var(--ok);color:#fff}.seg-cal button.on.c-warn{background:var(--warn);color:#fff}.seg-cal button.on.c-bad{background:var(--bad);color:#fff}
+.rev-res{display:flex;flex-wrap:wrap;gap:6px}.rev-res span{font-size:12px;border-radius:20px;padding:3px 10px}.rev-res .si{background:var(--okb);color:var(--ok)}.rev-res .no{background:var(--badb,#FBE6E4);color:var(--bad)}
+@media(max-width:520px){.fila-cal .seg{width:100%}.fila-cal .seg button{flex:1}}

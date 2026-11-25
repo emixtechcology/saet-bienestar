@@ -3,7 +3,7 @@
 
 function vInicio(){
  const u=S.user,sem=deSemana(),ok=sem.filter(hecha).length,exig=sem.filter(a=>!(a.estatus==='Pendiente'&&a.fecha>=hoy())).length,pct=exig?Math.round(ok/exig*100):0;
- const ids=new Set(sem.map(a=>a.id)),vis=S.vis.filter(v=>ids.has(v.actividadId)).length;
+ const supSem=sem.filter(a=>esSup(a)&&hecha(a)).length;
  const h=new Date().getHours(),sal=h<12?'Buenos días':h<19?'Buenas tardes':'Buenas noches';
  const pendientes=sem.filter(a=>!hecha(a)).length;
  const clave=u.rol==='admin'?(S.avIni||'region'):u.rol==='regional'?'zona':'asignadoNombre',grupos={};
@@ -18,7 +18,7 @@ function vInicio(){
    <div class="tile"><i>${ic('agenda')}</i><div><b>${sem.length}</b><span>Actividades de la semana</span></div></div>
    <div class="tile"><i>${ic('tareas')}</i><div><b>${ok}</b><span>Con evidencia</span></div></div>
    <div class="tile"><i>${ic('reloj')}</i><div><b>${pendientes}</b><span>Pendientes</span></div></div>
-   <div class="tile"><i>${ic('visitas')}</i><div><b>${vis}</b><span>Personas visitadas</span></div></div></div>
+   ${u.rol==='servidor'?`<div class="tile"><i>${ic('tareas')}</i><div><b>${sem.filter(a=>a.estatus==='Validada').length}</b><span>Validadas</span></div></div>`:`<div class="tile"><i>${ic('campo')}</i><div><b>${supSem}</b><span>Visitas de supervisión</span></div></div>`}</div>
   ${jefe()?`<div class="card"><h3>Avance de la semana por ${clave==='region'?'región':clave==='zona'?'municipio o subregión':'persona'}<span class="der">${pct}% general</span></h3>
    <div class="fila wrap" style="margin:-4px 0 10px">${u.rol==='admin'?`<div class="tabs">${[['region','Por región'],['zona','Por municipio']].map(([k,t])=>`<button class="${clave===k?'on':''}" onclick="S.avIni='${k}';vInicio()">${t}</button>`).join('')}</div>`:''}<span class="sp"></span><button class="btn sec ch" onclick="abrirReporte('')">${ic('reportes')} Reporte completo</button></div><div class="tabla"><table>
    <tr><th>${clave==='region'?'Región':clave==='zona'?'Zona':'Nombre'}</th><th>Programadas</th><th>Con evidencia</th><th style="width:34%">Cumplimiento <small class="mute">(de lo ya vencido)</small></th></tr>

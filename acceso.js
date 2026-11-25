@@ -28,10 +28,11 @@ async function formaRegistro(){
  $('#forma').innerHTML='<p class="mute">Cargando…</p>';
  S.selfie=null;
  $('#forma').innerHTML=`<h2>Registro</h2><p class="mute" style="margin-bottom:16px">Servidor de la Nación · solo se hace una vez.</p>
- <div class="campo"><label for="rk">Clave de tu municipio o subregión *</label><input id="rk" style="text-transform:uppercase" placeholder="Te la da tu encargado" autocomplete="off" onchange="revisarClave()" oninput="if(this.value.trim().length>=7)revisarClave()">
+ <div class="campo"><label for="rk">Clave de tu municipio o subregión *</label><input id="rk" style="text-transform:uppercase" placeholder="Te la da tu enlace municipal" autocomplete="off" onchange="revisarClave()" oninput="if(this.value.trim().length>=7)revisarClave()">
   <p class="sm" id="rkz" style="margin:6px 2px 0" aria-live="polite"></p></div>
  <div class="fila" style="margin-bottom:14px"><span class="av g" id="selfiePrev">${ic('perfil')}</span><div><label>Foto tipo selfie *</label>
   <label class="btn sec ch" style="display:inline-flex;margin:0">Tomar foto<input type="file" accept="image/*" capture="user" class="hide" onchange="tomarSelfie(this,'selfiePrev')"></label></div></div>
+ <div class="campo"><label for="rpu">Puesto *</label><select id="rpu"><option value="">Servidor de la Nación</option><option value="UBA">UBA</option></select></div>
  <div class="campo"><label>Nombre completo *</label><input id="rn"></div>
  <div class="campo"><label>CURP *</label><input id="rc" maxlength="18" style="text-transform:uppercase"></div>
  <div class="dos"><div class="campo"><label>Correo</label><input id="re" type="email"></div><div class="campo"><label>Teléfono</label><input id="rt" inputmode="tel"></div></div>
@@ -48,5 +49,5 @@ async function revisarClave(){const c=val('rk').toUpperCase(),p=$('#rkz');if(!p|
 async function tomarSelfie(inp,prev){if(!inp.files[0])return;S.selfie=await comprimir(inp.files[0],600,.75);$('#'+prev).outerHTML=`<img class="av g" id="${prev}" src="${S.selfie}" alt="">`}
 function registrar(b){ocupado(b,async()=>{
  if(!S.selfie) throw new Error('Toma tu foto para continuar');
- const r=await api('registro',{nombre:val('rn'),curp:val('rc'),correo:val('re'),telefono:val('rt'),facebook:val('rf'),instagram:val('ri'),pin:val('rp'),clave:val('rk'),selfie:S.selfie});
+ const r=await api('registro',{nombre:val('rn'),curp:val('rc'),correo:val('re'),telefono:val('rt'),facebook:val('rf'),instagram:val('ri'),pin:val('rp'),clave:val('rk'),selfie:S.selfie,puesto:val('rpu')});
  $('#forma').innerHTML=`<h2>¡Listo!</h2><p style="margin:10px 0 20px">${esc(r.mensaje)}</p><button class="btn" onclick="formaLogin()">Ir a entrar</button>`})}

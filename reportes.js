@@ -35,7 +35,7 @@ function vReportes(){
   <div class="vr-item"><i style="--c:var(--oro)">${ic('ia')}</i><b>Listo para entregar</b><span>PDF para el delegado, Excel con todas las tablas o resumen para WhatsApp.</span></div></div>`}</div>
  <details class="card no-print"><summary class="serif" style="font-size:15px;cursor:pointer">${ic('reportes')} Descargar bases completas en Excel</summary>
   <p class="mute sm" style="margin:10px 0">Todo el historial de tu alcance${u.rol==='admin'?' (todo el estado)':''}, sin filtros.</p>
-  ${[['Personal','Directorio del personal con CURP, contacto y redes'],['Actividades','Agenda completa con estatus'],['Evidencias','Evidencias con verificación, enlaces a fotos y ubicación'],['Visitas','Personas visitadas, resultados y ubicación'],['Todo','Un solo libro con las cuatro hojas']].map(([t,d])=>`<div class="item"><div class="sp"><div class="t">${t}</div><div class="s">${d}</div></div><button class="btn ${t==='Todo'?'':'sec'} ch" onclick="excel('${t}',this)">Descargar</button></div>`).join('')}</details>`;
+  ${[['Personal','Directorio del personal con CURP, contacto y redes'],['Actividades','Agenda completa con estatus'],['Evidencias','Evidencias con verificación, enlaces a fotos y ubicación'],['Todo','Un solo libro con las cuatro hojas']].map(([t,d])=>`<div class="item"><div class="sp"><div class="t">${t}</div><div class="s">${d}</div></div><button class="btn ${t==='Todo'?'':'sec'} ch" onclick="excel('${t}',this)">Descargar</button></div>`).join('')}</details>`;
 }
 function paramsReporte(){const R=S.rep;return{desde:R.desde,hasta:R.hasta,...paramsAlcance(R.sel)}}
 function generarReporte(b){ocupado(b,async()=>{const R=S.rep;

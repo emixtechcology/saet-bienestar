@@ -11,7 +11,6 @@ function formaEvidencia(id){
   <label class="btn sec" style="margin:0">Elegir de galería<input type="file" accept="image/*" multiple class="hide" onchange="agregarFotos(this,'galeria')"></label></div></div>
  <div class="campo"><label>¿Qué se hizo?</label><textarea id="eC" rows="3" placeholder="Describe brevemente el resultado"></textarea></div>
  <p class="sm mute" id="eG" style="margin-bottom:12px">Obteniendo ubicación…</p>
- ${esVisita(a)?`<div class="ia sm" style="margin-bottom:14px">${n?`Llevas <b>${n}</b> ${n===1?'visita registrada':'visitas registradas'} en esta actividad.`:'Aún no registras visitas en esta actividad.'} Las personas visitadas se capturan aparte, en el botón <b>Visitas</b>; puedes añadirlas o corregirlas antes o después de enviar la evidencia.</div>`:''}
  <button class="btn grande" onclick="enviarEvidencia('${id}',this)">Enviar evidencia</button>`,600);
  if(navigator.geolocation) navigator.geolocation.getCurrentPosition(p=>{S.geo=p.coords;const g=$('#eG');if(g)g.textContent='✓ Ubicación registrada'},()=>{const g=$('#eG');if(g)g.innerHTML='<b style="color:var(--warn)">Sin ubicación:</b> activa la ubicación del teléfono para que tu evidencia cuente como confiable.'},{enableHighAccuracy:true,timeout:9000});
  else $('#eG').textContent='';
