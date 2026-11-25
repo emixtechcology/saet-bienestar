@@ -29,6 +29,7 @@ const P = {
  personal:'<circle cx="9" cy="8" r="3.500"/><path d="M2.500 20c.6-3.600 3.200-5.500 6.500-5.500s5.900 1.900 6.500 5.500M16 4.800a3.500 3.500 0 010 6.400M18 14.800c2 .7 3.200 2.400 3.600 5.200"/>',
  monitores:'<path d="M2 12s3.600-7 10-7 10 7 10 7-3.600 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/>',
  reportes:'<path d="M12 3v12m0 0l-4.500-4.500M12 15l4.500-4.500M4 19h16"/>',
+ carga:'<path d="M12 16V4m0 0L7.500 8.500M12 4l4.500 4.500M4 14v4a2 2 0 002 2h12a2 2 0 002-2v-4"/>',
  supervision:'<circle cx="11" cy="11" r="6.500"/><path d="M20 20l-4.300-4.300M8.500 11l1.800 1.800 3.400-3.600"/>',
  ia:'<path d="M12 3l1.800 5.200L19 10l-5.200 1.800L12 17l-1.800-5.200L5 10l5.200-1.800zM19 16l.8 2.200L22 19l-2.200.8L19 22l-.8-2.200L16 19l2.200-.8z"/>',
  perfil:'<circle cx="12" cy="8" r="4"/><path d="M4 21c.8-4 4-6 8-6s7.200 2 8 6"/>',
@@ -41,6 +42,17 @@ const P = {
 const ic = n=>`<svg class="ic" viewBox="0 0 24 24">${P[n]||''}</svg>`;
 const CEIBA = '<path d="M32 60V31M32 36c0-9-9-8-16-15M32 33c-1-8-5-12-8-19M32 32V11M32 33c1-8 5-12 8-19M32 36c0-9 9-8 16-15"/><circle cx="16" cy="21" r="3"/><circle cx="24" cy="13.500" r="3"/><circle cx="32" cy="10.500" r="3"/><circle cx="40" cy="13.500" r="3"/><circle cx="48" cy="21" r="3"/>';
 
+/* Horarios: una actividad puede tener uno o varios bloques en el mismo día */
+const bloquesDe=a=>{const h=String(a.horarios||'');if(h)return h.split('|').map(x=>{const[i,f]=x.split('-');return{inicio:i||'',fin:f||''}}).filter(b=>b.inicio);return a.hora?[{inicio:a.hora,fin:a.horaFin||''}]:[]};
+const horarioTxt=a=>bloquesDe(a).map(b=>b.fin?b.inicio+'–'+b.fin:b.inicio).join(' y ');
+const HORAS=Array.from({length:35},(_,i)=>{const m=360+i*30;return String(Math.floor(m/60)).padStart(2,'0')+':'+(m%60?'30':'00')});
+function editorHorarios(id,bloques){S.edH=S.edH||{};S.edH[id]=bloques&&bloques.length?bloques.map(b=>({...b})):[{inicio:'',fin:''}];return`<div id="${id}" class="horarios">${filasHorario(id)}</div>`}
+function filasHorario(id){const l=S.edH[id];return l.map((b,i)=>`<div class="hfila"><input type="time" step="900" value="${b.inicio}" aria-label="Inicio" onchange="S.edH['${id}'][${i}].inicio=this.value"><span>a</span><input type="time" step="900" value="${b.fin}" aria-label="Fin" onchange="S.edH['${id}'][${i}].fin=this.value">${l.length>1?`<button class="x" aria-label="Quitar horario" onclick="S.edH['${id}'].splice(${i},1);$('#${id}').innerHTML=filasHorario('${id}')">${ic('x')}</button>`:''}</div>`).join('')+(l.length<6?`<button class="btn sec ch" onclick="S.edH['${id}'].push({inicio:'',fin:''});$('#${id}').innerHTML=filasHorario('${id}')">${ic('mas')} Agregar otro horario</button>`:'')}
+function leerHorarios(id){const l=(S.edH[id]||[]).filter(b=>b.inicio||b.fin).map(b=>({inicio:b.inicio,fin:b.fin})).sort((a,b)=>a.inicio.localeCompare(b.inicio));
+ l.forEach((b,i)=>{if(!b.inicio)throw new Error('Falta la hora de inicio de un horario');if(b.fin&&b.fin<=b.inicio)throw new Error(`La hora de fin (${b.fin}) debe ser después del inicio (${b.inicio})`);
+  const a=l[i-1];if(a&&(a.fin?b.inicio<a.fin:b.inicio===a.inicio))throw new Error(`Los horarios se enciman: ${a.inicio} y ${b.inicio}`)});return l}
+/* Fechas que genera "Repetir": desde la fecha elegida hasta el viernes (o domingo) de esa misma semana */
+function fechasRepetir(f,rep){const d=new Date(f+'T12:00'),dia=(d.getDay()+6)%7,hasta=rep==='lv'?4:rep==='semana'?6:dia,out=[];for(let i=dia;i<=Math.max(dia,hasta);i++)out.push(iso(mas(d,i-dia)));return out}
 /* Lista con opción "Otra/Otro": al elegirla se abre un cuadro para escribir cuál */
 const esOtra=v=>/^otr[ao]$/i.test(String(v||'').trim());
 function selectConOtra(id,opciones,actual,pregunta,ejemplo){
@@ -60,13 +72,30 @@ function comprimir(file,max=1280,q=.72){return new Promise((ok,no)=>{const img=n
   c.getContext('2d').drawImage(img,0,0,c.width,c.height);URL.revokeObjectURL(url);ok(c.toDataURL('image/jpeg',q))};
  img.onerror=()=>no(new Error('No se pudo leer la imagen'));img.src=url})}
 
-async function api(accion,datos={},ms=45000){
+/* Llamada al servidor con reintentos.
+   Si Google está saturado (más de 30 peticiones al mismo tiempo) o el servidor está ocupado, espera unos segundos
+   y vuelve a intentar sola, sin mostrar error. Cada petición lleva un identificador (rid): si llega dos veces,
+   el servidor devuelve la respuesta de la primera y no guarda nada doble. */
+const ESPERAS=[1500,3000,6000,10000,15000];let avisoDemanda=0;
+const dormir=ms=>new Promise(r=>setTimeout(r,ms));
+async function api(accion,datos={},ms=45000,rid){
  if(DEMO) return demoApi(accion,datos);
- const ctl=new AbortController(),t=setTimeout(()=>ctl.abort(),ms);let j;
- try{const r=await fetch(API_URL,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({accion,token:S.token,datos}),signal:ctl.signal});j=await r.json()}
- catch(e){const x=new Error('Sin conexión con el servidor. Revisa tu señal e intenta de nuevo.');x.red=true;throw x}
- finally{clearTimeout(t)}
- if(!j.ok) throw new Error(j.error); return j.data;
+ rid=rid||('R'+Date.now().toString(36)+Math.random().toString(36).slice(2,10));
+ for(let intento=0;;intento++){
+  let j=null,falla='';const ctl=new AbortController(),t=setTimeout(()=>ctl.abort(),ms);
+  try{const r=await fetch(API_URL,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({accion,token:S.token,datos,rid}),signal:ctl.signal});
+   const tx=await r.text();try{j=JSON.parse(tx)}catch(e){falla='saturado'}}       // Google responde una página de error cuando se satura
+  catch(e){falla=e.name==='AbortError'?'lento':'red'}
+  finally{clearTimeout(t)}
+  if(j&&!j.ok&&j.reintentar)falla='ocupado';
+  if(!falla){if(!j.ok)throw new Error(j.error);return j.data}
+  const max=falla==='saturado'||falla==='ocupado'?ESPERAS.length:2;
+  if(intento<max&&!(falla==='red'&&navigator.onLine===false)){
+   if(intento===1&&Date.now()-avisoDemanda>30000&&falla!=='red'){avisoDemanda=Date.now();try{toast('Hay mucha gente conectada. Seguimos intentando…')}catch(e){}}
+   await dormir(ESPERAS[intento]*(0.6+Math.random()*0.8));continue}
+  const x=new Error(falla==='red'||falla==='lento'?'Sin conexión con el servidor. Revisa tu señal e intenta de nuevo.':'El sistema tiene mucha demanda en este momento. Intenta de nuevo en un minuto.');
+  x.red=true;x.temporal=true;throw x;
+ }
 }
 const rangoDe=c=>({desde:iso(mas(c,-49)),hasta:iso(mas(c,56))});
 /* Recibe los datos del servidor, los deja en memoria y guarda copia local para que la app abra al instante. */
@@ -119,7 +148,7 @@ async function procesarCola(){
  try{S.cola=await cola.todos();
   if(miCola().length){aplicarCola();if($('#modal').classList.contains('hide'))pintar()}
   for(const x of miCola()){
-   try{await api(x.accion,x.datos,120000);await cola.quitar(x.id);enviadas++}
+   try{await api(x.accion,x.datos,120000,x.id);await cola.quitar(x.id);enviadas++}
    catch(e){if(e.red){sinRed=true;break} if(e.message==='SESION') throw e; await cola.quitar(x.id);toast('No se pudo guardar: '+e.message);enviadas++}
   }
   S.cola=await cola.todos();
@@ -137,11 +166,11 @@ function menu(){
   m.push(['agenda','Agenda'],['evidencias','Evidencias'],['visitas','Visitas'],['personal','Personal']);
  } else m.push(['tareas','Mis actividades'],['visitas','Mis visitas']);
  if(r==='admin') m.push(['monitores','Monitores']);
- if(jefe()) m.push(['supervision','Supervisión'],['reportes','Reportes']);
+ if(jefe()) m.push(['carga','Carga masiva'],['supervision','Supervisión'],['reportes','Reportes']);
  m.push(['perfil','Mi perfil']);
  return m;
 }
-const TITULOS={inicio:'Inicio',agenda:'Agenda semanal',tareas:'Mis actividades',evidencias:'Evidencias',visitas:'Visitas',personal:'Personal',monitores:'Monitores',reportes:'Reportes de avance',supervision:'Supervisión',perfil:'Mi perfil'};
+const TITULOS={inicio:'Inicio',agenda:'Agenda semanal',tareas:'Mis actividades',evidencias:'Evidencias',visitas:'Visitas',personal:'Personal',monitores:'Monitores',reportes:'Reportes de avance',supervision:'Supervisión',carga:'Carga masiva de agenda',perfil:'Mi perfil'};
 function ir(v){S.vista=v;S.f={};pintar();window.scrollTo(0,0)}
 function pintar(){
  const pend={personal:S.personal.filter(p=>p.estatus==='Pendiente').length,evidencias:S.evs.filter(e=>e.validacion==='Por validar').length,
@@ -153,7 +182,7 @@ function pintar(){
  <main class="main"><div class="top"><button id="btnMenu" onclick="cajon(1)" aria-label="Menú">${ic('menu')}</button><h1>${TITULOS[S.vista]}</h1><span id="colaInd" class="badge b-Pendiente ${miCola().length?'':'hide'}">${miCola().length} por enviar</span>
   <button class="yo" onclick="ir('perfil')">${avatar(S.user)}<div style="text-align:left"><b>${esc(S.user.nombre.split(' ').slice(0,2).join(' '))}</b><small>${ROL[S.user.rol]}${S.user.zona?' · '+esc(S.user.zona):S.user.region?' · '+esc(S.user.region):''}</small></div></button></div>
   <div id="vista"></div></main></div>`;
- ({inicio:vInicio,agenda:vAgenda,tareas:vTareas,evidencias:vEvidencias,visitas:vVisitas,personal:vPersonal,monitores:vMonitores,reportes:vReportes,supervision:vSupervision,perfil:vPerfil})[S.vista]();
+ ({inicio:vInicio,agenda:vAgenda,tareas:vTareas,evidencias:vEvidencias,visitas:vVisitas,personal:vPersonal,monitores:vMonitores,reportes:vReportes,supervision:vSupervision,carga:vCarga,perfil:vPerfil})[S.vista]();
 }
 function cajon(a){$('#side').classList.toggle('abierto',!!a);$('#velo').classList.toggle('abierto',!!a)}
 const dias7=()=>[0,1,2,3,4,5,6].map(i=>mas(S.semana,i));

@@ -5,7 +5,7 @@ function detalle(id){
  const a=S.acts.find(x=>x.id===id);if(!a)return;
  const e=S.evs.filter(x=>x.actividadId===id).pop(),vis=visitasDe(id),mio=a.asignadoA===S.user.id,mando=jefe()||a.creadoPor===S.user.id;
  modal(`<h2>${esc(a.titulo)}</h2><div class="fila wrap" style="margin-bottom:12px">${badge(estado(a))}<span class="badge">${esc(a.tipo)}</span></div>
- <div class="meta">${ic('agenda')}${fechaTxt(a.fecha)}${a.hora?' · '+esc(a.hora):''}</div>
+ <div class="meta">${ic('agenda')}${fechaTxt(a.fecha)}${horarioTxt(a)?' · '+esc(horarioTxt(a)):''}</div>
  <div class="meta">${ic('visitas')}${esc(a.lugar||'Sin lugar')} · ${esc(a.zona||a.region||'')}</div>
  <div class="meta">${ic('perfil')}Asignada a <b>${esc(a.asignadoNombre)}</b> · por ${esc(a.creadoNombre)}</div>
  ${a.descripcion?`<p style="margin:12px 0;padding:12px;background:var(--g50);border-radius:12px">${esc(a.descripcion)}</p>`:''}
@@ -20,9 +20,10 @@ function detalle(id){
   ${jefe()&&e&&e.validacion==='Por validar'?`<button class="btn ok" onclick="validar('${e.id}','Validada',this)">Validar</button><button class="btn bad" onclick="validar('${e.id}','Rechazada',this)">Rechazar</button>`:''}
   ${jefe()&&e?`<button class="btn oro" onclick="verificarIA('${e.id}',this)">${ic('ia')}${e.ia?'Volver a revisar':'Revisar ahora'} con IA</button>`:''}
   ${mando&&!e?`<button class="btn sec" onclick="$('#repro').classList.toggle('hide')">Reprogramar</button><button class="btn bad" onclick="eliminarAct('${a.id}',this)">Eliminar</button>`:''}</div>
- <div id="repro" class="hide dos" style="margin-top:12px"><input type="date" id="rF" value="${a.fecha}"><div class="fila"><input type="time" id="rH" value="${esc(a.hora)}"><button class="btn" onclick="reprogramar('${a.id}',this)">Guardar</button></div></div>`,600);
+ <div id="repro" class="hide" style="margin-top:12px"><div class="campo"><label>Nueva fecha</label><input type="date" id="rF" value="${a.fecha}"></div><div class="campo"><label>Horario</label>${editorHorarios('rHor',bloquesDe(a))}</div><button class="btn" onclick="reprogramar('${a.id}')">Guardar cambios</button></div>`,600);
 }
-function reprogramar(id){const a=S.acts.find(x=>x.id===id),f=val('rF'),h=val('rH');if(!a||!f)return;Object.assign(a,{fecha:f,hora:h});cerrar();pintar();toast('Actividad reprogramada');fondo(api('guardarActividad',{id,fecha:f,hora:h}))}
+function reprogramar(id){const a=S.acts.find(x=>x.id===id),f=val('rF');if(!a||!f)return;let hs;try{hs=leerHorarios('rHor')}catch(e){return toast(e.message)}
+ Object.assign(a,{fecha:f,horarios:hs.map(b=>b.inicio+'-'+b.fin).join('|'),hora:hs[0]?hs[0].inicio:'',horaFin:hs.length?hs[hs.length-1].fin:''});cerrar();pintar();toast('Actividad reprogramada');fondo(api('guardarActividad',{id,fecha:f,horarios:hs}))}
 function eliminarAct(id){S.acts=S.acts.filter(a=>a.id!==id);cerrar();pintar();toast('Actividad eliminada');fondo(api('eliminarActividad',{id}))}
 function validar(id,v){const e=S.evs.find(x=>x.id===id);if(!e)return;let nota='';
  if(v==='Rechazada'){nota=prompt('Motivo del rechazo (lo verá quien subió la evidencia):');if(nota===null)return}

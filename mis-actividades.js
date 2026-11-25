@@ -8,7 +8,7 @@ function vTareas(){
  $('#vista').innerHTML=`<div class="filtros"><div class="tabs">${['Pendientes','Entregadas','Todas'].map(x=>`<button class="${t===x?'on':''}" onclick="S.tab='${x}';vTareas()">${x}</button>`).join('')}</div><span class="sp"></span>
   ${S.user.rol==='monitor'?`<button class="btn oro" onclick="planearIA()">${ic('ia')}Planear con IA</button><button class="btn" onclick="nuevaActividad()">${ic('mas')}Nueva actividad</button>`:''}</div>
  <div class="grid tarjetas">${l.map(a=>`<div class="card tarea"><div class="fila">${badge(estado(a))}<span class="sp"></span><span class="sm mute">${esc(a.tipo)}</span></div><h4>${esc(a.titulo)}</h4>
-  <div class="meta">${ic('agenda')}${fechaTxt(a.fecha)}${a.hora?' · '+esc(a.hora):''}</div><div class="meta">${ic('visitas')}${esc(a.lugar||a.zona||'—')}</div>
+  <div class="meta">${ic('agenda')}${fechaTxt(a.fecha)}${horarioTxt(a)?' · '+esc(horarioTxt(a)):''}</div><div class="meta">${ic('visitas')}${esc(a.lugar||a.zona||'—')}</div>
   <div class="fila" style="margin-top:auto;padding-top:6px">${['Pendiente','Rechazada'].includes(a.estatus)?`<button class="btn sp" onclick="formaEvidencia('${a.id}')">${ic('evidencias')}Subir evidencia</button>`:''}<button class="btn sec ${hecha(a)?'sp':''}" onclick="detalle('${a.id}')">Ver</button></div>
   ${esVisita(a)&&a.estatus!=='Validada'?`<button class="btn oro" onclick="listaVisitas('${a.id}')">${ic('visitas')}Visitas registradas (${visitasDe(a.id).length})</button>`:''}</div>`).join('')}</div>
  ${l.length?'':'<div class="card vacio">No hay actividades en esta lista.</div>'}`;

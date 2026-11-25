@@ -12,10 +12,10 @@ function vAgenda(){
   <input placeholder="Buscar…" value="${esc(f.q||'')}" onchange="S.f.q=this.value;vAgenda()">
   ${S.user.rol!=='encargado'?`<select onchange="S.f.zona=this.value;vAgenda()"><option value="">Todas las zonas</option>${zonasVisibles().map(z=>`<option ${f.zona===z?'selected':''}>${esc(z)}</option>`).join('')}</select>`:''}
   <select onchange="S.f.est=this.value;vAgenda()"><option value="">Todo estatus</option>${['Pendiente','Vencida','Con evidencia','Validada','Rechazada'].map(e=>`<option ${f.est===e?'selected':''}>${e}</option>`).join('')}</select>
-  <button class="btn oro" onclick="planearIA()">${ic('ia')}Planear con IA</button><button class="btn" onclick="nuevaActividad()">${ic('mas')}Nueva actividad</button></div>
+  <button class="btn sec" onclick="ir('carga')">${ic('carga')}Carga masiva</button><button class="btn oro" onclick="planearIA()">${ic('ia')}Planear con IA</button><button class="btn" onclick="nuevaActividad()">${ic('mas')}Nueva actividad</button></div>
  <div class="semana">${dias7().map(d=>{const k=iso(d),l=sem.filter(a=>a.fecha===k).sort((a,b)=>a.hora.localeCompare(b.hora)),ab=S.f.abierto===k;
   return`<div class="col ${k===hoy()?'hoy':''}"><header><span>${d.toLocaleDateString('es-MX',{weekday:'long'})}</span><b>${d.getDate()}</b></header>
-  ${(ab?l:l.slice(0,6)).map(a=>`<button class="chip e-${cls(estado(a))}" onclick="detalle('${a.id}')"><b>${a.hora?esc(a.hora)+' · ':''}${esc(a.titulo)}</b><span>${esc(a.asignadoNombre)}</span></button>`).join('')}
+  ${(ab?l:l.slice(0,6)).map(a=>`<button class="chip e-${cls(estado(a))}" onclick="detalle('${a.id}')"><b>${horarioTxt(a)?esc(horarioTxt(a))+' · ':''}${esc(a.titulo)}</b><span>${esc(a.asignadoNombre)}</span></button>`).join('')}
   ${l.length>6&&!ab?`<button class="mas" onclick="S.f.abierto='${k}';vAgenda()">+ ${l.length-6} más</button>`:''}${l.length?'':'<div class="mute sm" style="padding:4px">Sin actividades</div>'}</div>`}).join('')}</div>`;
 }
 
@@ -32,10 +32,11 @@ function nuevaActividad(){
  modal(`<h2>Nueva actividad</h2>
  <div class="campo"><label>Título *</label><input id="aT" placeholder="Ej. Visitas de seguimiento en Villa Aldama"></div>
  <div class="dos"><div class="campo"><label for="aTipo">Tipo de actividad</label>${selectConOtra('aTipo',TIPOS,'','¿Qué actividad es?','Ej. Entrega de tarjetas, recorrido con el delegado…')}</div><div class="campo"><label>Lugar</label><input id="aL"></div></div>
- <div class="dos"><div class="campo"><label>Fecha *</label><input id="aF" type="date" value="${hoy()}"></div><div class="campo"><label>Hora</label><input id="aH" type="time"></div></div>
+ <div class="dos"><div class="campo"><label>Fecha *</label><input id="aF" type="date" value="${hoy()}"></div><div class="campo"><label for="aR">Repetir</label><select id="aR"><option value="">Solo ese día</option><option value="lv">Hasta el viernes de esa semana</option><option value="semana">Hasta el domingo de esa semana</option></select></div></div>
+ <div class="campo"><label>Horario <span class="mute">(inicio y fin; puedes agregar más de uno)</span></label>${editorHorarios('aHor')}</div>
  <div class="campo"><label>Indicaciones</label><textarea id="aD" rows="2"></textarea></div>
  <div class="campo">${selector()}</div>
- <button class="btn" style="width:100%" onclick="try{guardarActs(this,[{titulo:val('aT'),tipo:valOtra('aTipo','Escribe qué actividad es'),lugar:val('aL'),fecha:val('aF'),hora:val('aH'),descripcion:val('aD')}])}catch(e){toast(e.message)}">Guardar actividad</button>`);
+ <button class="btn" style="width:100%" onclick="try{const base={titulo:val('aT'),tipo:valOtra('aTipo','Escribe qué actividad es'),lugar:val('aL'),horarios:leerHorarios('aHor'),descripcion:val('aD')};if(!val('aF'))throw new Error('Falta la fecha');guardarActs(this,fechasRepetir(val('aF'),val('aR')).map(f=>({...base,fecha:f})))}catch(e){toast(e.message)}">Guardar actividad</button>`);
 }
 function guardarActs(b,lista){ocupado(b,async()=>{
  if(lista.some(x=>!x.titulo||!x.fecha)) throw new Error('Falta el título o la fecha');

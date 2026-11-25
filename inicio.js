@@ -32,4 +32,4 @@ function vInicio(){
   :`<div class="card"><h3>Tu avance</h3><div class="fila"><div class="barra sp"><i style="width:${pct}%"></i></div><b>${pct}%</b></div><p class="sm mute" style="margin-top:10px">${ok} de ${exig} actividades que ya debían hacerse tienen evidencia (${sem.length} programadas esta semana).</p></div>`}
  </div></div>`;
 }
-const itemAct=a=>`<div class="item"><div class="sp"><div class="t">${esc(a.titulo)}</div><div class="s">${a.hora?esc(a.hora)+' · ':''}${esc(a.lugar||a.zona)} · ${esc(a.asignadoNombre)}</div></div>${badge(estado(a))}<button class="btn sec ch" onclick="detalle('${a.id}')">Abrir</button></div>`;
+const itemAct=a=>`<div class="item"><div class="sp"><div class="t">${esc(a.titulo)}</div><div class="s">${horarioTxt(a)?esc(horarioTxt(a))+' · ':''}${esc(a.lugar||a.zona)} · ${esc(a.asignadoNombre)}</div></div>${badge(estado(a))}<button class="btn sec ch" onclick="detalle('${a.id}')">Abrir</button></div>`;
