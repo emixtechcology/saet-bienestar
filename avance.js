@@ -9,7 +9,7 @@ const num = n => Number(n||0).toLocaleString('es-MX');
 const pct = (a,b) => b?Math.round(a/b*100):0;
 const periodoTxt = r => r.desde===r.hasta?fechaLarga(r.desde):`${fechaLarga(r.desde)} al ${fechaLarga(r.hasta)}`;
 const fechaLarga = s => new Date(s+'T12:00').toLocaleDateString('es-MX',{day:'numeric',month:'long',year:'numeric'});
-const nivelHijo = t => t==='estado'?'región':t==='region'?'municipio o distrito':'servidor';
+const nivelHijo = t => t==='estado'?'región':t==='region'?'municipio o subregión':'servidor';
 
 function semaforoChip(p){const s=SEMAFORO(p);return`<span class="sem" style="--c:${s.c}"><i aria-hidden="true">${s.i}</i>${pctTxt(p)} · ${s.t}</span>`}
 function anillo(p){const s=SEMAFORO(p),v=p||0,C=2*Math.PI*26;
@@ -62,7 +62,7 @@ function hallazgos(t,hijos,personas,nivel){
 /* ── Tablas ── */
 function tablaHijos(lista,conRegion){
  const l=lista.slice().sort((a,b)=>(b.cumplimiento??-1)-(a.cumplimiento??-1)||b.actividades-a.actividades);
- return`<div class="tabla"><table class="tr"><tr><th>#</th><th>${conRegion?'Municipio / distrito':'Nombre'}</th>${conRegion?'<th>Región</th>':''}<th style="min-width:150px">Cumplimiento</th><th>Program.</th><th>Exigibles</th><th>Con evid.</th><th>Validadas</th><th>Vencidas</th><th>Evid. sosp.</th><th>Visitas</th><th>Servidores<br><small>con act. / total</small></th></tr>
+ return`<div class="tabla"><table class="tr"><tr><th>#</th><th>${conRegion?'Municipio / subregión':'Nombre'}</th>${conRegion?'<th>Región</th>':''}<th style="min-width:150px">Cumplimiento</th><th>Program.</th><th>Exigibles</th><th>Con evid.</th><th>Validadas</th><th>Vencidas</th><th>Evid. sosp.</th><th>Visitas</th><th>Servidores<br><small>con act. / total</small></th></tr>
  ${l.map((x,i)=>`<tr><td class="mute">${x.actividades?i+1:'—'}</td><td><b>${esc(x.nombre)}</b></td>${conRegion?`<td class="sm mute">${esc(x.region||'')}</td>`:''}<td>${semaforoChip(x.cumplimiento)}</td><td>${num(x.actividades)}</td><td>${num(x.exigibles)}</td><td>${num(x.conEvidencia)}</td><td>${num(x.validadas)}</td><td>${x.vencidas?`<b style="color:var(--bad)">${num(x.vencidas)}</b>`:0}</td><td>${x.evSospechosas?`<b style="color:var(--bad)">${num(x.evSospechosas)}</b>`:0}</td><td>${num(x.visitas)}</td><td>${num(x.servidoresConActividad)} / ${num(x.servidores)}</td></tr>`).join('')||'<tr><td colspan="12" class="vacio">Sin datos.</td></tr>'}</table></div>`}
 function tablaPersonas(lista,lim){
  const l=lista.slice().sort((a,b)=>(b.cumplimiento??-1)-(a.cumplimiento??-1)||b.conEvidencia-a.conEvidencia).slice(0,lim||500);
@@ -95,7 +95,7 @@ function docReporte(r,iaTexto,paquete){
  <section class="card"><h3>Hallazgos principales</h3>${hallazgos(t,hijos,personas,nivelHijo(A.tipo))}</section>`;
  if(iaTexto) h+=`<section class="card ia-doc"><h3>${ic('ia')} Análisis con IA</h3><p style="white-space:pre-wrap">${esc(iaTexto)}</p></section>`;
  if(est) h+=`<section class="card"><h3>Avance por región</h3>${barrasAvance(r.regiones)}${tablaHijos(r.regiones,false)}</section>`;
- if(est||reg) h+=`<section class="card"><h3>Avance por municipio y distrito <span class="der">${zonas.length} zonas</span></h3>${reg?barrasAvance(zonas):''}${tablaHijos(zonas,est)}</section>`;
+ if(est||reg) h+=`<section class="card"><h3>Avance por municipio y subregión <span class="der">${zonas.length} zonas</span></h3>${reg?barrasAvance(zonas):''}${tablaHijos(zonas,est)}</section>`;
  if(zon) h+=`<section class="card"><h3>Avance por servidor <span class="der">${personas.length} personas</span></h3>${tablaPersonas(personas)}</section>`;
  else h+=`<section class="card"><h3>Servidores</h3><div class="dos-col">${listaCorta(destacados,'Mejor desempeño','Sin datos suficientes (mínimo 2 actividades vencidas o hechas).')}${listaCorta(atencion,'Requieren atención (vencidas)','Nadie tiene actividades vencidas.')}</div></section>`;
  h+=`<section class="card"><h3>Tendencia ${r.serieTipo==='mes'?'mensual':'diaria'}</h3>${columnasSerie(r)}</section>
@@ -112,9 +112,9 @@ function paqueteHojas(r){
  const grupos=est?r.regiones.filter(x=>x.nombre!=='Monitores').map(g=>({g,zonas:r.zonas.filter(z=>z.region===g.nombre),pers:personas.filter(p=>p.region===g.nombre)}))
   :r.zonas.map(g=>({g,zonas:null,pers:personas.filter(p=>p.zona===g.nombre)}));
  return grupos.map(({g,zonas,pers})=>{const t=est?g:g;
-  return`<div class="salto"></div><section class="hoja">${cabecera(g.nombre,r,est?'Hoja de región':'Hoja de municipio o distrito')}${kpis(t)}
-  <div class="card"><h3>Hallazgos</h3>${hallazgos(t,zonas||pers,pers,zonas?'municipio o distrito':'servidor')}</div>
-  <div class="card"><h3>${zonas?'Municipios y distritos de la región':'Servidores'}</h3>${zonas?barrasAvance(zonas)+tablaHijos(zonas,false):tablaPersonas(pers,40)}</div></section>`}).join('');
+  return`<div class="salto"></div><section class="hoja">${cabecera(g.nombre,r,est?'Hoja de región':'Hoja de municipio o subregión')}${kpis(t)}
+  <div class="card"><h3>Hallazgos</h3>${hallazgos(t,zonas||pers,pers,zonas?'municipio o subregión':'servidor')}</div>
+  <div class="card"><h3>${zonas?'Municipios y subregiones de la región':'Servidores'}</h3>${zonas?barrasAvance(zonas)+tablaHijos(zonas,false):tablaPersonas(pers,40)}</div></section>`}).join('');
 }
 
 /* ── Salidas: PDF, Excel, WhatsApp ── */

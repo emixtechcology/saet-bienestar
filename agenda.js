@@ -13,18 +13,22 @@ function vAgenda(){
   ${S.user.rol!=='encargado'?`<select onchange="S.f.zona=this.value;vAgenda()"><option value="">Todas las zonas</option>${zonasVisibles().map(z=>`<option ${f.zona===z?'selected':''}>${esc(z)}</option>`).join('')}</select>`:''}
   <select onchange="S.f.est=this.value;vAgenda()"><option value="">Todo estatus</option>${['Pendiente','Vencida','Con evidencia','Validada','Rechazada'].map(e=>`<option ${f.est===e?'selected':''}>${e}</option>`).join('')}</select>
   <button class="btn sec" onclick="ir('carga')">${ic('carga')}Carga masiva</button><button class="btn oro" onclick="planearIA()">${ic('ia')}Planear con IA</button><button class="btn" onclick="nuevaActividad()">${ic('mas')}Nueva actividad</button></div>
- <div class="semana">${dias7().map(d=>{const k=iso(d),l=sem.filter(a=>a.fecha===k).sort((a,b)=>a.hora.localeCompare(b.hora)),ab=S.f.abierto===k;
+ <div class="semana">${dias7().map(d=>{const k=iso(d),l=agruparEquipo(sem.filter(a=>a.fecha===k)).sort((a,b)=>a.hora.localeCompare(b.hora)),ab=S.f.abierto===k;
   return`<div class="col ${k===hoy()?'hoy':''}"><header><span>${d.toLocaleDateString('es-MX',{weekday:'long'})}</span><b>${d.getDate()}</b></header>
-  ${(ab?l:l.slice(0,6)).map(a=>`<button class="chip e-${cls(estado(a))}" onclick="detalle('${a.id}')"><b>${horarioTxt(a)?esc(horarioTxt(a))+' · ':''}${esc(a.titulo)}</b><span>${esc(a.asignadoNombre)}</span></button>`).join('')}
+  ${(ab?l:l.slice(0,6)).map(a=>`<button class="chip e-${cls(estado(a))}" onclick="detalle('${a.id}')"><b>${horarioTxt(a)?esc(horarioTxt(a))+' · ':''}${esc(a.titulo)}</b><span>${a.n>1?`${ic('perfil')} Equipo de ${a.n} personas`:esc(a.asignadoNombre)}</span></button>`).join('')}
   ${l.length>6&&!ab?`<button class="mas" onclick="S.f.abierto='${k}';vAgenda()">+ ${l.length-6} más</button>`:''}${l.length?'':'<div class="mute sm" style="padding:4px">Sin actividades</div>'}</div>`}).join('')}</div>`;
 }
 
+/* En la semana, una tarjeta por actividad en equipo ("Equipo de 7 personas") en lugar de una por persona */
+const PEOR=['Vencida','Rechazada','Pendiente','Con evidencia','Validada'];
+function agruparEquipo(l){const g={};l.forEach(a=>{const k=a.grupo&&companeros(a).length?a.grupo+'|'+a.fecha:a.id;(g[k]=g[k]||[]).push(a)});
+ return Object.values(g).map(x=>{if(x.length===1)return x[0];const peor=x.slice().sort((a,b)=>PEOR.indexOf(estado(a))-PEOR.indexOf(estado(b)))[0];return{...peor,n:x.length}})}
 function selector(){
  const u=S.user,gente=S.personal.filter(p=>p.estatus==='Activo'&&p.id!==u.id&&p.rol!=='admin');
  if(u.rol==='monitor') return '<p class="sm mute">La actividad se registra a tu nombre.</p>';
  return `<label>Asignar a *</label><div class="fila" style="margin-bottom:8px"><input id="selQ" placeholder="Buscar persona o zona…" oninput="filtrarSel()">
   <button class="btn sec ch" onclick="document.querySelectorAll('#selL label:not(.hide) input').forEach(i=>i.checked=true)">Todos</button></div>
-  <div class="lista" id="selL">${gente.sort((a,b)=>(a.zona+a.nombre).localeCompare(b.zona+b.nombre)).map(p=>`<label data-t="${esc((p.nombre+' '+p.zona+' '+p.region+' '+ROL[p.rol]).toLowerCase())}"><input type="checkbox" value="${p.id}">${avatar(p)}<span class="sp">${esc(p.nombre)}<br><small class="mute">${ROL[p.rol]} · ${esc(p.zona||p.region||'')}</small></span></label>`).join('')||'<div class="vacio">Aún no hay personal activo.</div>'}</div>`;
+  <div class="lista" id="selL"><label data-t="yo ${esc(u.nombre.toLowerCase())}" class="yo"><input type="checkbox" value="${u.id}">${avatar(u)}<span class="sp"><b>Yo también participo</b><br><small class="mute">${esc(u.nombre)} · ${ROL[u.rol]}</small></span></label>${gente.sort((a,b)=>(a.zona+a.nombre).localeCompare(b.zona+b.nombre)).map(p=>`<label data-t="${esc((p.nombre+' '+p.zona+' '+p.region+' '+ROL[p.rol]).toLowerCase())}"><input type="checkbox" value="${p.id}">${avatar(p)}<span class="sp">${esc(p.nombre)}<br><small class="mute">${ROL[p.rol]} · ${esc(p.zona||p.region||'')}</small></span></label>`).join('')||'<div class="vacio">Aún no hay personal activo.</div>'}</div>`;
 }
 function filtrarSel(){const q=val('selQ').toLowerCase();document.querySelectorAll('#selL label').forEach(l=>l.classList.toggle('hide',!l.dataset.t.includes(q)))}
 const elegidos=()=>[...document.querySelectorAll('#selL input:checked')].map(i=>i.value);
@@ -36,12 +40,14 @@ function nuevaActividad(){
  <div class="campo"><label>Horario <span class="mute">(inicio y fin; puedes agregar más de uno)</span></label>${editorHorarios('aHor')}</div>
  <div class="campo"><label>Indicaciones</label><textarea id="aD" rows="2"></textarea></div>
  <div class="campo">${selector()}</div>
+ ${S.user.rol!=='monitor'?`<div class="campo"><label for="aM">Si la asignas a varias personas, ¿cómo se entrega la evidencia?</label><select id="aM"><option value="">Cada participante sube su propia evidencia</option><option value="equipo">Una sola evidencia por todo el equipo</option></select>
+  <p class="sm mute" style="margin:6px 2px 0">Con "una por equipo", la primera persona que suba la evidencia la entrega por todos, y al validarla o rechazarla aplica para todo el equipo.</p></div>`:''}
  <button class="btn" style="width:100%" onclick="try{const base={titulo:val('aT'),tipo:valOtra('aTipo','Escribe qué actividad es'),lugar:val('aL'),horarios:leerHorarios('aHor'),descripcion:val('aD')};if(!val('aF'))throw new Error('Falta la fecha');guardarActs(this,fechasRepetir(val('aF'),val('aR')).map(f=>({...base,fecha:f})))}catch(e){toast(e.message)}">Guardar actividad</button>`);
 }
 function guardarActs(b,lista){ocupado(b,async()=>{
  if(lista.some(x=>!x.titulo||!x.fecha)) throw new Error('Falta el título o la fecha');
- const r=await api('guardarActividad',{actividades:lista,asignados:elegidos()});
- S.acts.push(...r.nuevas);cerrar();toast(r.nuevas.length===1?'Se creó 1 actividad':'Se crearon '+r.nuevas.length+' actividades');pintar()})}
+ const r=await api('guardarActividad',{actividades:lista,asignados:elegidos(),modo:($('#aM')||{}).value||''});
+ S.acts.push(...r.nuevas);S.equipo.push(...r.nuevas.map(({id,grupo,fecha,asignadoA,asignadoNombre,zona,region,estatus,modo})=>({id,grupo,fecha,asignadoA,asignadoNombre,zona,region,estatus,modo})));cerrar();toast(r.nuevas.length===1?'Se creó 1 actividad':'Se crearon '+r.nuevas.length+' actividades');pintar()})}
 function planearIA(){
  S.borr=[];
  modal(`<h2>${ic('ia')} Planear la semana con IA</h2><div class="ia"><label>Escribe o dicta tu plan tal como lo dirías</label>

@@ -99,8 +99,13 @@ async function api(accion,datos={},ms=45000,rid){
 }
 const rangoDe=c=>({desde:iso(mas(c,-49)),hasta:iso(mas(c,56))});
 /* Recibe los datos del servidor, los deja en memoria y guarda copia local para que la app abra al instante. */
+/* Actividades en equipo: misma actividad (grupo y día) asignada a varias personas */
+const companeros=a=>{if(!a||!a.grupo)return[];const l=(S.equipo||[]).filter(x=>x.grupo===a.grupo&&x.fecha===a.fecha);return l.length>1?l:[]};
+const enEquipo=a=>!!a&&a.modo==='equipo'&&companeros(a).length>1;
+function evidenciaDe(a){if(!a)return null;const p=S.evs.filter(e=>e.actividadId===a.id).pop();if(p||!enEquipo(a))return p||null;const ids=new Set(companeros(a).map(x=>x.id));return S.evs.filter(e=>ids.has(e.actividadId)).pop()||null}
+function marcarEquipo(a,est,desde){if(!enEquipo(a))return;const ids=new Set(companeros(a).map(x=>x.id));[...S.acts,...S.equipo].forEach(x=>{if(ids.has(x.id)&&desde.includes(x.estatus))x.estatus=est})}
 function aplicar(d){
- Object.assign(S,{user:d.usuario,zonas:d.zonas,personal:d.personal,acts:d.actividades,evs:d.evidencias,vis:d.visitas,claves:d.claves||[]});
+ Object.assign(S,{user:d.usuario,zonas:d.zonas,personal:d.personal,acts:d.actividades,evs:d.evidencias,vis:d.visitas,claves:d.claves||[],equipo:d.equipo||[]});
  try{localStorage.setItem('ceiba_c',JSON.stringify({r:S.rango,d}))}catch(e){try{localStorage.removeItem('ceiba_c')}catch(_){}}
  aplicarCola();
 }
@@ -127,7 +132,7 @@ const miCola=()=>S.user?S.cola.filter(x=>x.uid===S.user.id&&x.accion).sort((a,b)
 function aplicarCola(){miCola().forEach(x=>{const d=x.datos;
  if(x.accion==='subirEvidencia'){const a=S.acts.find(y=>y.id===d.actividadId);
   if(!a||S.evs.some(e=>e.id===d.id)||!['Pendiente','Rechazada'].includes(a.estatus)) return;
-  a.estatus='Con evidencia';
+  a.estatus='Con evidencia';marcarEquipo(a,'Con evidencia',['Pendiente','Rechazada']);
   S.evs.push({id:d.id,actividadId:a.id,usuarioId:S.user.id,usuarioNombre:S.user.nombre,region:a.region,zona:a.zona,fecha:d.cuando,fotos:d.fotos.join(' | '),comentario:d.comentario,lat:d.lat,lng:d.lng,validacion:'Por validar',validadoPor:'',nota:'',ia:''})}
  if(x.accion==='guardarVisita'){const i=S.vis.findIndex(v=>v.id===d.id),a=S.acts.find(y=>y.id===d.actividadId);
   const base=i>-1?S.vis[i]:{evidenciaId:'',servidorId:S.user.id,servidorNombre:S.user.nombre,fecha:hoy()};

@@ -5,7 +5,7 @@ function pantallaAcceso(modo){
  $('#raiz').innerHTML=`<div id="acceso">
  <div class="portada"><svg class="deco" viewBox="0 0 64 64">${CEIBA}</svg>
   <div class="marca"><img src="${LOGO}" alt=""><div><b>${NOMBRE}</b><span>${LEMA}</span></div></div>
-  <div class="lema"><h1>El territorio, organizado desde la raíz.</h1><p>Agenda semanal, tareas, evidencias y visitas de las cinco regiones en un solo lugar.</p></div>
+  <div class="lema"><h1>El territorio, organizado desde la raíz.</h1><p>Agenda semanal, tareas, evidencias y visitas de las seis regiones en un solo lugar.</p></div>
   <div class="sm lema" style="color:var(--oro2)">${SIGLA}</div></div>
  <div class="forma"><div id="forma"></div></div></div>`;
  modo==='registro'?formaRegistro():formaLogin();
@@ -28,7 +28,7 @@ async function formaRegistro(){
  $('#forma').innerHTML='<p class="mute">Cargando…</p>';
  S.selfie=null;
  $('#forma').innerHTML=`<h2>Registro</h2><p class="mute" style="margin-bottom:16px">Servidor de la Nación · solo se hace una vez.</p>
- <div class="campo"><label for="rk">Clave de tu municipio o distrito *</label><input id="rk" style="text-transform:uppercase" placeholder="Te la da tu encargado" autocomplete="off" onchange="revisarClave()" oninput="if(this.value.trim().length>=7)revisarClave()">
+ <div class="campo"><label for="rk">Clave de tu municipio o subregión *</label><input id="rk" style="text-transform:uppercase" placeholder="Te la da tu encargado" autocomplete="off" onchange="revisarClave()" oninput="if(this.value.trim().length>=7)revisarClave()">
   <p class="sm" id="rkz" style="margin:6px 2px 0" aria-live="polite"></p></div>
  <div class="fila" style="margin-bottom:14px"><span class="av g" id="selfiePrev">${ic('perfil')}</span><div><label>Foto tipo selfie *</label>
   <label class="btn sec ch" style="display:inline-flex;margin:0">Tomar foto<input type="file" accept="image/*" capture="user" class="hide" onchange="tomarSelfie(this,'selfiePrev')"></label></div></div>

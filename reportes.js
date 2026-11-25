@@ -28,7 +28,7 @@ function vReportes(){
    <button class="btn" onclick="generarReporte(this)">${ic('reportes')} Generar reporte</button></div>
   <div class="pf-grid">${bloquePeriodo(R,'vReportes')}
    <div class="pf-bloque"><span class="pf-et">Alcance</span>${selectorAlcance(R,"S.rep.sel=this.value;vReportes()")}</div>
-   <div class="pf-bloque"><span class="pf-et">Opciones</span>${t==='zona'?'<p class="sm mute" style="margin:0">El reporte de un municipio incluye la tabla completa de sus servidores.</p>':`<label class="check"><input type="checkbox" ${R.paquete?'checked':''} onchange="S.rep.paquete=this.checked"><span>Agregar una hoja por cada ${t==='estado'?'región':'municipio o distrito'}<small>Paquete listo para imprimir o mandar</small></span></label>`}</div></div></div>
+   <div class="pf-bloque"><span class="pf-et">Opciones</span>${t==='zona'?'<p class="sm mute" style="margin:0">El reporte de un municipio incluye la tabla completa de sus servidores.</p>':`<label class="check"><input type="checkbox" ${R.paquete?'checked':''} onchange="S.rep.paquete=this.checked"><span>Agregar una hoja por cada ${t==='estado'?'región':'municipio o subregión'}<small>Paquete listo para imprimir o mandar</small></span></label>`}</div></div></div>
  <div id="repDoc">${R.datos?barraAcciones()+docReporte(R.datos,R.ia,R.paqueteHecho):`<div class="vacio-rep no-print">
   <div class="vr-item"><i style="--c:var(--ok)">${ic('reportes')}</i><b>Avance con semáforo</b><span>Por región, municipio y servidor, contando solo lo que ya debía hacerse.</span></div>
   <div class="vr-item"><i style="--c:var(--bad)">${ic('evidencias')}</i><b>Evidencias verificadas</b><span>Confiables, por revisar y sospechosas: fotos repetidas, sin datos de cámara o fuera de fecha.</span></div>

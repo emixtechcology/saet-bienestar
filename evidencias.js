@@ -5,6 +5,7 @@ function formaEvidencia(id){
  const a=S.acts.find(x=>x.id===id),n=visitasDe(id).length;S.fotos=[];S.geo=null;
  modal(`<h2>Evidencia</h2><p class="mute" style="margin:-8px 0 14px">${esc(a.titulo)}</p>
  <div class="consejo">${ic('evidencias')}<div><b>Toma la foto en el momento, desde aquí.</b><span>El sistema revisa cada foto: si es original de cámara, si coincide con la fecha y el lugar, y si ya se usó antes. Las capturas de pantalla y las fotos reenviadas se marcan para revisión.</span></div></div>
+ ${enEquipo(a)?`<div class="ia sm" style="margin-bottom:14px"><b>Evidencia de equipo.</b> Lo que subas cuenta para las ${companeros(a).length} personas de esta actividad. Si un compañero ya la subió, no hace falta que la subas tú.</div>`:''}
  <div class="campo"><label>Fotos (hasta 4) *</label><div class="fotos-ev" id="eF"></div>
   <div class="fila wrap" style="margin-top:10px"><label class="btn" style="margin:0">${ic('evidencias')} Tomar foto<input type="file" accept="image/*" capture="environment" class="hide" onchange="agregarFotos(this,'camara')"></label>
   <label class="btn sec" style="margin:0">Elegir de galería<input type="file" accept="image/*" multiple class="hide" onchange="agregarFotos(this,'galeria')"></label></div></div>

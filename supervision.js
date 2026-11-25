@@ -1,5 +1,5 @@
 /* SAET Bienestar · Supervisión: quién hizo su trabajo, con qué evidencia y dónde
-   Lo usa: Administrador (todo el estado), Regional (su región) y Encargado (su municipio o distrito)
+   Lo usa: Administrador (todo el estado), Regional (su región) y Encargado (su municipio o subregión)
    Tabla por persona (avance contra lo asignado, calidad de evidencias, visitas y localidades),
    mapa de evidencias y visitas, y ficha individual con todo su trabajo del periodo. */
 
@@ -59,7 +59,7 @@ function pintarSupervision(){
  if(R.vista==='mapa') pintarMapa('mapaSup',d.puntos.filter(p=>!R.rol||(d.personas.find(x=>x.id===p.personaId)||{}).rol===R.rol)).catch(e=>{const m=$('#mapaSup');if(m)m.innerHTML=`<div class="vacio">${esc(e.message)}</div>`});
 }
 function tablaGrupos(g,clave){const reg=clave==='region';
- return`<p class="sm mute" style="margin:0 0 8px 4px">${g.length} ${reg?'regiones':'municipios y distritos'} · toca uno para ver ${reg?'sus municipios':'a su gente'}.</p><div class="card tabla"><table class="tr sup"><tr><th>${reg?'Región':'Municipio / distrito'}</th><th>Personas<br><small>con act. / total</small></th><th style="min-width:170px">Avance</th><th>Sin evidencia</th><th>Vencidas</th><th>Evidencias<br><small>✓ ◆ ▲</small></th><th>Repetidas</th><th>Visitas</th><th>Localidades</th></tr>
+ return`<p class="sm mute" style="margin:0 0 8px 4px">${g.length} ${reg?'regiones':'municipios y subregiones'} · toca uno para ver ${reg?'sus municipios':'a su gente'}.</p><div class="card tabla"><table class="tr sup"><tr><th>${reg?'Región':'Municipio / subregión'}</th><th>Personas<br><small>con act. / total</small></th><th style="min-width:170px">Avance</th><th>Sin evidencia</th><th>Vencidas</th><th>Evidencias<br><small>✓ ◆ ▲</small></th><th>Repetidas</th><th>Visitas</th><th>Localidades</th></tr>
  ${g.map(x=>`<tr ${x.nombre==='Monitores'?'':`class="clic" title="Ver detalle" onclick="entrarGrupo('${esc(x.nombre)}')"`}><td class="persona-c"><b>${esc(x.nombre)}</b><div class="sm mute">${x.responsable?(reg?'Regional: ':'Encargado: ')+esc(x.responsable):reg?'':esc(x.region||'')}</div></td>
   <td>${num(x.conActividad)} / ${num(x.personas)}</td><td>${x.asignadas?semaforoChip(x.avance)+`<div class="sm mute">${x.conEvidencia} de ${x.exigibles} exigibles</div>`:'<span class="sm mute">Sin actividades</span>'}</td>
   <td>${x.sinEvidencia?`<b style="color:var(--bad)">${x.sinEvidencia}</b>`:0}</td><td>${x.vencidas?`<b style="color:var(--bad)">${x.vencidas}</b>`:0}</td>

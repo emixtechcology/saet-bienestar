@@ -387,3 +387,10 @@ button.tile2:hover{transform:translateY(-1px)}.tile2.on{outline:2px solid var(--
 }
 .paso-c{min-width:0}.paso-c span,.paso-c b{overflow-wrap:anywhere}.paso-c .btn{max-width:100%;white-space:normal}
 @media(max-width:420px){.paso-c{padding:12px;gap:10px}.paso-c>i{width:28px;height:28px}.paso-c .btn{align-self:stretch}}
+/* ── Actividades en equipo ── */
+.equipo-act{margin:12px 0;padding:12px 14px;border:1px solid var(--g100);background:var(--g50);border-radius:14px;display:grid;gap:8px}
+.equipo-act>.fila b{display:inline-flex;align-items:center;gap:6px;color:var(--g800);font-size:14px}.equipo-act svg.ic{width:16px;height:16px}
+.miembro{display:flex;align-items:center;gap:10px;background:#fff;border-radius:12px;padding:7px 10px}.miembro .av{width:32px;height:32px;font-size:12px;flex:none}.miembro .sp{min-width:0;font-size:13.5px;line-height:1.25}
+.badge.b-oro{background:var(--oro2,#F6EBD3);color:#7A5A12}
+#selL label.yo{background:var(--g50);border:1px dashed var(--g200);border-radius:12px;margin-bottom:6px}
+.chip span svg.ic{width:12px;height:12px;vertical-align:-2px}
